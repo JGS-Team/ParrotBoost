@@ -1,0 +1,167 @@
+PARROTBOOST — END USER LICENSE AGREEMENT (EULA) Version 3.0.3 Publisher:
+JGS Copyright © 2026 JGS. All rights reserved.
+
+IMPORTANT: PLEASE READ THIS AGREEMENT BEFORE INSTALLING OR USING
+PARROTBOOST.
+
+This End User License Agreement (“Agreement”) is a legal agreement
+between you (“User”) and JGS (“Licensor”) governing your use of
+ParrotBoost, version 3.0.3, including its executable files, source code,
+documentation, graphics, and associated assets (collectively, the
+“Software”).
+
+By installing, copying, running, or otherwise using the Software, you
+agree to this Agreement. If you do not agree, do not install or use the
+Software.
+
+1.  GRANT OF LICENSE
+
+Subject to your compliance with this Agreement, JGS grants you a
+limited, personal, non-exclusive, non-transferable, revocable license to
+install and use the Software on computers that you own or are authorized
+to administer, for personal or internal business purposes.
+
+The Software’s source code may be made publicly available through the
+project repository for transparency, inspection, and the limited
+activities expressly permitted by this Agreement. Public availability of
+the source code does not place the Software in the public domain or make
+it Open Source Software under an OSI-approved license.
+
+2.  PERMITTED USE
+
+You may: - Install and run the Software on computers that you own or are
+authorized to administer. - Use the Turbo Parrot Power Plan,
+system-cleaning tools, service optimizer, and other features included
+with the Software. - View, inspect, compile, and modify the source code
+for personal, non-commercial purposes. - Share unmodified copies of the
+Software, provided that you include this Agreement and retain all
+copyright, attribution, and proprietary notices.
+
+3.  RESTRICTIONS
+
+Unless you have prior written permission from JGS, you may not: - Sell,
+rent, lease, sublicense, or commercially exploit the Software or any
+part of it. - Distribute modified versions, forks, repackaged builds, or
+derivative products. - Redistribute the Software as part of a paid
+product, service, bundle, or commercial offering. - Claim authorship or
+ownership of the Software, or present it as your own product. - Remove,
+obscure, or alter copyright notices, JGS branding, version information,
+logos, or other proprietary notices included with the Software. - Use
+the Software to intentionally damage, disrupt, or gain unauthorized
+access to any system. - Use the Software in violation of applicable law.
+
+4.  SYSTEM MODIFICATIONS AND DISCLAIMER OF WARRANTY
+
+The Software changes or interacts with Windows system components.
+Depending on the features used, this may include: - Windows power plans,
+including application of the “Turbo Parrot Power Plan”. - Windows
+services and scheduled tasks, including disabling selected background
+components. - Windows Delivery Optimization and telemetry-related
+tasks. - Browser cache directories, including those used by Chrome,
+Edge, Firefox, Brave, and Opera. - Temporary files, thumbnail databases,
+and Windows Error Reporting files. - Memory-related processes through
+the built-in RAM Cleaner feature.
+
+You are responsible for reviewing the effects of each feature before
+using it and for maintaining appropriate backups. Some changes may
+affect system behavior, installed applications, or Windows
+functionality.
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS
+PROVIDED “AS IS” AND “AS AVAILABLE”, WITHOUT WARRANTIES OF ANY KIND,
+WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+To the maximum extent permitted by applicable law, JGS shall not be
+liable for indirect, incidental, special, consequential, or punitive
+damages, or for loss of data, system instability, loss of use, or
+performance degradation arising out of or related to the use or
+inability to use the Software.
+
+Nothing in this Agreement excludes or limits liability where such
+exclusion or limitation is prohibited by mandatory applicable law. In
+particular, this Agreement does not limit rights that a consumer cannot
+waive under applicable law.
+
+5.  HARDWARE MONITORING AND PERFORMANCE DATA
+
+The Software uses LibreHardwareMonitor and native Win32 APIs to read
+hardware metrics, which may include CPU, GPU, RAM, and disk usage or
+performance information.
+
+According to the Software’s stated design, these metrics are processed
+locally and used to display performance statistics within the
+application. The Software is not intended to transmit hardware metrics,
+hardware identifiers, or personal information to JGS or other third
+parties.
+
+6.  AUTO-UPDATE FEATURE
+
+The Software may check for updates through the GitHub Releases API when
+it starts. This check is intended to compare the installed version with
+the latest published release.
+
+According to the Software’s stated design, the update check does not
+transmit personal information. Updates may be installed using an Inno
+Setup installer that requests administrator privileges. You may disable
+automatic update checks in the application settings if that option is
+available in your build.
+
+7.  INTELLECTUAL PROPERTY
+
+The Software, including its name, logo, user interface, “Turbo Parrot
+Power Plan” branding, compiled binaries, documentation, and associated
+assets, is owned by JGS or its respective rights holders and is
+protected by applicable copyright and intellectual property laws.
+
+Except for the limited permissions expressly granted in this Agreement,
+no rights are transferred to you. All rights not expressly granted are
+reserved by the relevant rights holder.
+
+Third-party components remain subject to their respective licenses and
+copyright notices. Nothing in this Agreement is intended to override
+those third-party license terms.
+
+8.  TERMINATION
+
+This Agreement remains effective until terminated. Your rights under
+this Agreement terminate automatically if you materially breach its
+terms.
+
+Upon termination, you must stop using the Software and delete or destroy
+copies in your possession or control, except where retention is required
+by applicable law.
+
+Termination does not affect any rights or obligations that by their
+nature are intended to survive termination.
+
+9.  GOVERNING LAW AND DISPUTES
+
+This Agreement is governed by the laws of the Republic of Poland,
+subject to any mandatory consumer-protection rules that apply to you.
+
+Disputes shall be resolved by the courts having jurisdiction under
+applicable law. Nothing in this section deprives a consumer of any
+mandatory right to bring proceedings before a court that has
+jurisdiction under applicable consumer-protection laws.
+
+10. CONTACT
+
+Publisher: JGS Product: ParrotBoost v3.0.3 Stable Source Code:
+https://github.com/JGS/ParrotBoost Support: GitHub Issues at the project
+repository
+
+11. ENTIRE AGREEMENT AND SEVERABILITY
+
+This Agreement constitutes the agreement between you and JGS concerning
+the Software and supersedes prior statements about the subject matter of
+this Agreement, unless a separate written agreement applies.
+
+If any provision is found unenforceable, the remaining provisions shall
+remain in effect to the extent permitted by law.
+
+By installing, running, or using ParrotBoost, you acknowledge that you
+have read and understood this Agreement and agree to its terms.
+
+© 2026 JGS. All rights reserved. ParrotBoost — Unleash Your PC’s
+Potential.
