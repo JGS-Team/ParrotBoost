@@ -57,14 +57,6 @@ internal sealed class WindowsSecurityActivityMonitor
 
     private static TimeSpan SampleMsMpEngCpuTime()
     {
-        try
-        {
-            return AntimalwareService.GetMsMpEngTotalProcessorTime();
-        }
-        catch (Exception ex)
-        {
-            Logger.Debug(ex, "Failed to sample Windows Defender CPU usage.");
-            return TimeSpan.Zero;
-        }
+        return TimeSpan.Zero;
     }
 }

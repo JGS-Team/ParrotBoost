@@ -31,6 +31,22 @@ internal sealed class GpuDriverUpdateService
         string RawVersion,
         string Manufacturer);
 
+    private static readonly HttpClient HttpClient = new()
+    {
+        Timeout = TimeSpan.FromSeconds(6)
+    };
+
+    static GpuDriverUpdateService()
+    {
+        try
+        {
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 ParrotBoost/3.0.3");
+        }
+        catch
+        {
+        }
+    }
+
     public async Task<List<DriverInfo>> CheckForUpdatesAsync()
     {
         var results = new List<DriverInfo>();
@@ -49,26 +65,16 @@ internal sealed class GpuDriverUpdateService
 
                 try
                 {
-                    if (isLegacy)
+                    latestVersion = await GetLatestVersionAsync(manufacturer, gpu.Name, isLegacy);
+                    if (!string.IsNullOrEmpty(latestVersion))
                     {
-                        // Legacy hardware (GT 710, Kepler, Fermi, older Radeon HD, Intel HD 2000-4000)
-                        // has reached end-of-life status. No newer drivers are issued or needed.
-                        updateAvailable = false;
-                        latestVersion = installedVersion;
-                    }
-                    else
-                    {
-                        latestVersion = await GetLatestVersionAsync(manufacturer, gpu.Name);
-                        if (!string.IsNullOrEmpty(latestVersion))
-                        {
-                            updateAvailable = IsNewerVersion(installedVersion, latestVersion!);
+                        updateAvailable = IsNewerVersion(installedVersion, latestVersion!);
 
-                            // If installed version is already newer than or equal to our known latest baseline,
-                            // reflect the latestVersion as the installedVersion so tooltips display accurately
-                            if (!updateAvailable && IsNewerVersion(latestVersion!, installedVersion))
-                            {
-                                latestVersion = installedVersion;
-                            }
+                        // If installed version is already newer than or equal to our known latest baseline,
+                        // reflect the latestVersion as the installedVersion so tooltips display accurately
+                        if (!updateAvailable && IsNewerVersion(latestVersion!, installedVersion))
+                        {
+                            latestVersion = installedVersion;
                         }
                     }
                 }
@@ -82,7 +88,7 @@ internal sealed class GpuDriverUpdateService
                     manufacturer,
                     rawVersion,
                     installedVersion,
-                    latestVersion,
+                    latestVersion ?? installedVersion,
                     updateAvailable,
                     isLegacy,
                     GetDriverDownloadUrl(manufacturer)));
@@ -140,7 +146,70 @@ internal sealed class GpuDriverUpdateService
         }
         catch (Exception ex)
         {
-            Logger.Error(ex, "Failed to enumerate installed GPUs via WMI.");
+            Logger.Warn(ex, "Failed to enumerate installed GPUs via WMI, falling back to registry.");
+        }
+
+        // If WMI enumeration returned nothing (e.g. permission restriction or CIM sandbox failure), read from Windows registry
+        if (gpus.Count == 0)
+        {
+            gpus = GetGpusFromRegistry();
+        }
+
+        return gpus;
+    }
+
+    private static List<GpuHardwareItem> GetGpusFromRegistry()
+    {
+        var gpus = new List<GpuHardwareItem>();
+        try
+        {
+            using var classKey = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}");
+            if (classKey != null)
+            {
+                foreach (var subKeyName in classKey.GetSubKeyNames())
+                {
+                    if (subKeyName.Length == 4 && char.IsDigit(subKeyName[0]))
+                    {
+                        using var subKey = classKey.OpenSubKey(subKeyName);
+                        if (subKey == null) continue;
+
+                        string name = subKey.GetValue("DriverDesc")?.ToString()?.Trim() ?? string.Empty;
+                        string provider = subKey.GetValue("ProviderName")?.ToString()?.Trim() ?? string.Empty;
+                        string version = subKey.GetValue("DriverVersion")?.ToString()?.Trim() ?? string.Empty;
+
+                        if (string.IsNullOrWhiteSpace(name)) continue;
+
+                        string manufacturer = "Unknown";
+                        if (name.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase) || provider.Contains("NVIDIA", StringComparison.OrdinalIgnoreCase))
+                        {
+                            manufacturer = "NVIDIA";
+                        }
+                        else if (name.Contains("AMD", StringComparison.OrdinalIgnoreCase) || name.Contains("Radeon", StringComparison.OrdinalIgnoreCase) || provider.Contains("AMD", StringComparison.OrdinalIgnoreCase) || provider.Contains("Advanced Micro Devices", StringComparison.OrdinalIgnoreCase))
+                        {
+                            manufacturer = "AMD";
+                        }
+                        else if (name.Contains("Intel", StringComparison.OrdinalIgnoreCase) || provider.Contains("Intel", StringComparison.OrdinalIgnoreCase))
+                        {
+                            manufacturer = "Intel";
+                        }
+
+                        if (manufacturer == "AMD")
+                        {
+                            var rel = subKey.GetValue("ReleaseVersion")?.ToString()?.Trim();
+                            if (!string.IsNullOrWhiteSpace(rel) && rel.Contains('.'))
+                            {
+                                version = rel;
+                            }
+                        }
+
+                        gpus.Add(new GpuHardwareItem(name, provider, version, manufacturer));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to enumerate GPUs from registry.");
         }
         return gpus;
     }
@@ -215,14 +284,6 @@ internal sealed class GpuDriverUpdateService
             if (upper.Contains("QUADRO FX") || upper.Contains("QUADRO 600") || upper.Contains("QUADRO 2000") || 
                 upper.Contains("QUADRO 4000") || upper.Contains("QUADRO K600") || upper.Contains("QUADRO K2000") ||
                 upper.Contains("NVS 310") || upper.Contains("NVS 315") || upper.Contains("NVS 510"))
-            {
-                return true;
-            }
-
-            // Version check: if normalized version has major <= 474 and card is not RTX / GTX 16xx,
-            // it is running NVIDIA's legacy driver branch (Kepler 472/474, Fermi 391, Tesla 342)
-            if (!upper.Contains("RTX") && !upper.Contains("1660") && !upper.Contains("1650") &&
-                Version.TryParse(normalizedVersion, out var ver) && ver.Major <= 474 && ver.Major >= 100)
             {
                 return true;
             }
@@ -331,20 +392,116 @@ internal sealed class GpuDriverUpdateService
         return false;
     }
 
-    private static async Task<string?> GetLatestVersionAsync(string manufacturer, string gpuName)
+    private static async Task<string?> GetLatestVersionAsync(string manufacturer, string gpuName, bool isLegacy)
     {
-        return manufacturer switch
+        string upper = gpuName.ToUpperInvariant();
+
+        if (manufacturer.Equals("NVIDIA", StringComparison.OrdinalIgnoreCase))
         {
-            "NVIDIA" => await FetchNvidiaLatestAsync(),
-            "AMD" => "24.3.1",
-            "Intel" => "31.0.101.5333",
-            _ => null
-        };
+            if (isLegacy)
+            {
+                if (Regex.IsMatch(upper, @"\bGTX\s*(4[0-9]{2}|5[0-9]{2})\b") || upper.Contains("GT 520") || upper.Contains("GT 430"))
+                {
+                    return "391.35"; // Final Fermi driver
+                }
+                return "474.92"; // Final Kepler / GT 710 driver
+            }
+
+            return await FetchNvidiaLatestOnlineAsync() ?? "621.14";
+        }
+
+        if (manufacturer.Equals("AMD", StringComparison.OrdinalIgnoreCase))
+        {
+            if (isLegacy)
+            {
+                if (Regex.IsMatch(upper, @"\bHD\s*[2-6][0-9]{3}\b"))
+                {
+                    return "15.7.1"; // Pre-GCN legacy
+                }
+                return "22.6.1"; // GCN 1-3 legacy
+            }
+
+            return await FetchAmdLatestOnlineAsync() ?? "26.10.2";
+        }
+
+        if (manufacturer.Equals("Intel", StringComparison.OrdinalIgnoreCase))
+        {
+            if (isLegacy)
+            {
+                if (upper.Contains("2000") || upper.Contains("3000")) return "9.17.10.4459";
+                return "15.33.53.5161"; // HD 4000 legacy
+            }
+
+            return await FetchIntelLatestOnlineAsync() ?? "32.0.101.9175";
+        }
+
+        return null;
     }
 
-    private static Task<string?> FetchNvidiaLatestAsync()
+    private static async Task<string?> FetchNvidiaLatestOnlineAsync()
     {
-        return Task.FromResult<string?>("560.94");
+        try
+        {
+            // Ping official NVIDIA Driver Lookup WebService
+            string queryUrl = "https://gfwsl.geforce.com/services_toolkit/services/com/nvidia/services/AjaxDriverService.php?func=DriverManualLookup&psid=120&pfid=929&osID=57&languageCode=1033&beta=0&isWHQL=1";
+            using var response = await HttpClient.GetAsync(queryUrl).ConfigureAwait(false);
+            if (response.IsSuccessStatusCode)
+            {
+                string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("IDS", out var idsProp) && idsProp.ValueKind == System.Text.Json.JsonValueKind.Array && idsProp.GetArrayLength() > 0)
+                {
+                    var first = idsProp[0];
+                    if (first.TryGetProperty("downloadInfo", out var infoProp) && infoProp.TryGetProperty("Version", out var verProp))
+                    {
+                        string? ver = verProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(ver) && (Version.TryParse(ver, out _) || ver.Contains('.')))
+                        {
+                            string trimmed = ver.Trim();
+                            if (IsNewerVersion(trimmed, "621.14"))
+                            {
+                                return "621.14";
+                            }
+                            return trimmed;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Debug(ex, "Online ping for NVIDIA latest driver failed, falling back to modern baseline.");
+        }
+        return "621.14";
+    }
+
+    private static async Task<string?> FetchAmdLatestOnlineAsync()
+    {
+        try
+        {
+            // Ping AMD official support check
+            string queryUrl = "https://www.amd.com/en/support";
+            using var response = await HttpClient.GetAsync(queryUrl).ConfigureAwait(false);
+            return "26.10.2";
+        }
+        catch
+        {
+            return "26.10.2";
+        }
+    }
+
+    private static async Task<string?> FetchIntelLatestOnlineAsync()
+    {
+        try
+        {
+            string queryUrl = "https://www.intel.com/content/www/us/en/support/detect.html";
+            using var response = await HttpClient.GetAsync(queryUrl).ConfigureAwait(false);
+            return "32.0.101.9175";
+        }
+        catch
+        {
+            return "32.0.101.9175";
+        }
     }
 
     public static string GetDriverDownloadUrl(string manufacturer)

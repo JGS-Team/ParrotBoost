@@ -104,7 +104,7 @@
     "Scan": "Dateien suchen",
     "CleanNow": "Jetzt bereinigen",
     "TurboParrotTitle": "Turbo Parrot Energieplan",
-    "TurboParrotDesc": "Maximaler Energieplan: 100% CPU min/max, 0% Core Parking, kein PCIe/Festplatten/USB-Ruhezustand.",
+    "TurboParrotDesc": "Turbo Parrot Energieplan: 100% CPU min/max, 0% Core Parking, minimale Latenz, kein PCIe/Festplatten/USB-Ruhezustand.",
     "TurboParrotEnable": "Turbo Parrot aktivieren",
     "TurboParrotRestore": "Standard wiederherstellen",
     "TurboParrotActive": "Aktiv (Turbo Parrot)",
@@ -130,6 +130,30 @@
     "OptDeliveryOptimization": "Übermittlungsoptimierungs-Dienst deaktivieren",
     "OptDynamicTick": "Dynamic Tick deaktivieren (Hochpräzisionstimer)",
     "CleanRam": "RAM leeren",
-    "CheckUpdatesNow": "Jetzt nach Updates suchen"
+    "CheckUpdatesNow": "Jetzt nach Updates suchen",
+    "FactoryResetTitle": "Werkseinstellungen",
+    "ResetDefaults": "Auf Werkseinstellungen zurücksetzen",
+    "ResetDefaultsDesc": "Stellt die Standardkonfiguration nach der Installation wieder her (Out of the box)."
+  },
+  "Notifications": {
+    "ConfirmResetTitle": "Werkseinstellungen wiederherstellen",
+    "ConfirmResetMessage": "Möchten Sie wirklich alle Einstellungen auf die Werkseinstellungen zurücksetzen?",
+    "ResetDefaultsSuccess": "Werkseinstellungen erfolgreich wiederhergestellt!",
+    "UpdateTitle": "Aktualisierungen",
+    "UpdateLatest": "Sie haben die neueste Version von ParrotBoost (v{0}).",
+    "UpdateFailed": "Update-Prüfung fehlgeschlagen: {0}",
+    "RamCleaned": "RAM-Speicher wurde erfolgreich bereinigt!",
+    "ConfirmCleanupTitle": "Bereinigung bestätigen",
+    "ConfirmCleanupMessage": "Möchten Sie die ausgewählten Systemordner wirklich bereinigen?",
+    "CleanupSuccess": "Bereinigung erfolgreich abgeschlossen.",
+    "CleanupError": "Fehler bei der Bereinigung: {0}",
+    "DriverUpdateAvailableTooltip": "Eine neuere GPU-Treiberversion ist verfügbar:\n{0}",
+    "BoostStarted": "Turbo Boost aktiviert!",
+    "BoostRestored": "Standardeinstellungen wiederhergestellt."
+  },
+  "Tray": {
+    "Show": "Anzeigen",
+    "BoostToggle": "Boost EIN/AUS",
+    "Exit": "Beenden"
   }
 }

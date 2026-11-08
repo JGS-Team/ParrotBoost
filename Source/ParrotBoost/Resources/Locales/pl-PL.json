@@ -104,7 +104,7 @@
     "Scan": "Skanuj pliki",
     "CleanNow": "Wyczyść teraz",
     "TurboParrotTitle": "Plan Zasilania Turbo Parrot",
-    "TurboParrotDesc": "Maksymalny plan zasilania: 100% CPU, 0% Core Parking, brak uśpienia PCIe/dysków/USB.",
+    "TurboParrotDesc": "Plan zasilania Turbo Parrot: 100% CPU, 0% Core Parking, zerowe opóźnienia, brak uśpienia PCIe/dysków/USB.",
     "TurboParrotEnable": "Włącz Turbo Parrot",
     "TurboParrotRestore": "Przywróć domyślny",
     "TurboParrotActive": "Aktywny (Turbo Parrot)",
@@ -130,6 +130,30 @@
     "OptDeliveryOptimization": "Wyłącz usługę Optymalizacji Dostarczania (DoSvc)",
     "OptDynamicTick": "Wyłącz Dynamic Tick (Wysoka precyzja zegara)",
     "CleanRam": "Wyczyść RAM",
-    "CheckUpdatesNow": "Sprawdź aktualizacje teraz"
+    "CheckUpdatesNow": "Sprawdź aktualizacje teraz",
+    "FactoryResetTitle": "Ustawienia fabryczne",
+    "ResetDefaults": "Przywróć ustawienia fabryczne",
+    "ResetDefaultsDesc": "Przywraca domyślną konfigurację po instalacji (Out of the box)."
+  },
+  "Notifications": {
+    "ConfirmResetTitle": "Przywracanie ustawień fabrycznych",
+    "ConfirmResetMessage": "Czy na pewno chcesz przywrócić wszystkie ustawienia do stanu początkowego (Out of the box)?",
+    "ResetDefaultsSuccess": "Ustawienia fabryczne zostały pomyślnie przywrócone!",
+    "UpdateTitle": "Aktualizacje",
+    "UpdateLatest": "Posiadasz najnowszą wersję ParrotBoost (v{0}).",
+    "UpdateFailed": "Nie udało się sprawdzić aktualizacji: {0}",
+    "RamCleaned": "Pamięć RAM została pomyślnie wyczyszczona!",
+    "ConfirmCleanupTitle": "Potwierdź czyszczenie",
+    "ConfirmCleanupMessage": "Czy na pewno chcesz wyczyścić wybrane foldery systemowe?",
+    "CleanupSuccess": "Czyszczenie zakończone pomyślnie.",
+    "CleanupError": "Błąd podczas czyszczenia: {0}",
+    "DriverUpdateAvailableTooltip": "Nowa wersja sterownika GPU jest dostępna:\n{0}",
+    "BoostStarted": "Turbo Boost aktywowany!",
+    "BoostRestored": "Ustawienia domyślne przywrócone."
+  },
+  "Tray": {
+    "Show": "Pokaż",
+    "BoostToggle": "Boost Włącz/Wyłącz",
+    "Exit": "Zakończ"
   }
 }

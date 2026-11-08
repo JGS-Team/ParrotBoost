@@ -21,7 +21,7 @@ public sealed class UpdateCheckResult
 public static class ApplicationUpdateService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    public const string CurrentVersion = "3.0.2";
+    public const string CurrentVersion = "3.0.3";
     public const string RepositoryOwner = "JGS-Parrotnest";
     public const string RepositoryName = "ParrotBoost";
     public const string ReleasesPageUrl = "https://github.com/JGS-Parrotnest/ParrotBoost/releases";
@@ -160,12 +160,14 @@ public static class ApplicationUpdateService
                 return false;
             }
 
+            SilentlyRemoveOldVersion();
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = tempInstallerPath,
                 UseShellExecute = true,
                 Verb = "runas",
-                Arguments = "/SP- /SILENT"
+                Arguments = "/SP- /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS /NORESTART"
             };
 
             Process.Start(startInfo);
@@ -175,6 +177,52 @@ public static class ApplicationUpdateService
         {
             Logger.Error(ex, "Failed to launch installer.");
             return false;
+        }
+    }
+
+    public static void SilentlyRemoveOldVersion()
+    {
+        try
+        {
+            const string appId = "{90540FF6-ACF6-4C3E-9F86-911586175009}_is1";
+            string[] registryRoots = {
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + appId,
+                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\" + appId
+            };
+
+            foreach (var root in registryRoots)
+            {
+                using var hklmKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(root);
+                using var hkcuKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(root);
+                var key = hklmKey ?? hkcuKey;
+                if (key != null)
+                {
+                    string? uninst = key.GetValue("QuietUninstallString")?.ToString() 
+                                  ?? key.GetValue("UninstallString")?.ToString();
+                    if (!string.IsNullOrWhiteSpace(uninst))
+                    {
+                        uninst = uninst.Trim().Trim('\"');
+                        if (File.Exists(uninst))
+                        {
+                            var psi = new ProcessStartInfo
+                            {
+                                FileName = uninst,
+                                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
+                                CreateNoWindow = true,
+                                UseShellExecute = true,
+                                Verb = "runas"
+                            };
+                            using var p = Process.Start(psi);
+                            p?.WaitForExit(8000);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Silent removal of old version before update encountered a non-critical error.");
         }
     }
 

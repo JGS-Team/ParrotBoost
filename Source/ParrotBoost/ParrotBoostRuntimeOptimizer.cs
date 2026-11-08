@@ -221,18 +221,19 @@ internal sealed class ParrotBoostRuntimeOptimizer
                 }
             }
 
-            string scheme = highPerformance ? "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" : "381b4222-f694-41f0-9685-ff5bb260df2e";
-            
-            ProcessStartInfo psi = new("powercfg", $"/setactive {scheme}")
+            if (highPerformance)
             {
-                CreateNoWindow = true,
-                UseShellExecute = false
-            };
-            using var process = Process.Start(psi);
-            process?.WaitForExit();
-            _highPerformancePowerPlanActive = highPerformance;
+                TurboParrotPowerPlanManager.ApplyTurboParrotPlan();
+                _highPerformancePowerPlanActive = true;
+            }
+            else
+            {
+                TurboParrotPowerPlanManager.RestoreDefaultPlan();
+                _highPerformancePowerPlanActive = false;
+            }
+
             _lastPowerPlanSwitchUtc = now;
-            Logger.Debug("Power plan set to {0}", highPerformance ? "High Performance" : "Balanced");
+            Logger.Debug("Power plan set to {0}", highPerformance ? "Turbo Parrot" : "Balanced");
         }
         catch (Exception ex)
         {

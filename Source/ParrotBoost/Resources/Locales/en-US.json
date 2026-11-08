@@ -104,7 +104,7 @@
     "Scan": "Scan for files",
     "CleanNow": "Clean Now",
     "TurboParrotTitle": "Turbo Parrot Power Plan",
-    "TurboParrotDesc": "Maximum performance power plan: 100% CPU min/max, 0% core parking, no PCIe/disk/USB sleep.",
+    "TurboParrotDesc": "Turbo Parrot power plan: 100% CPU min/max, 0% core parking, zero latency, no PCIe/disk/USB sleep.",
     "TurboParrotEnable": "Enable Turbo Parrot",
     "TurboParrotRestore": "Restore Default Plan",
     "TurboParrotActive": "Active (Turbo Parrot)",
@@ -130,6 +130,30 @@
     "OptDeliveryOptimization": "Disable Delivery Optimization Service",
     "OptDynamicTick": "Disable Dynamic Tick (High Precision Timer)",
     "CleanRam": "Clean RAM",
-    "CheckUpdatesNow": "Check for updates now"
+    "CheckUpdatesNow": "Check for updates now",
+    "FactoryResetTitle": "Factory Defaults",
+    "ResetDefaults": "Restore Factory Defaults",
+    "ResetDefaultsDesc": "Restores the default out-of-the-box configuration after installation."
+  },
+  "Notifications": {
+    "ConfirmResetTitle": "Restore Factory Defaults",
+    "ConfirmResetMessage": "Are you sure you want to reset all settings to the out-of-the-box factory defaults?",
+    "ResetDefaultsSuccess": "Factory defaults successfully restored!",
+    "UpdateTitle": "Updates",
+    "UpdateLatest": "You have the latest version of ParrotBoost (v{0}).",
+    "UpdateFailed": "Failed to check for updates: {0}",
+    "RamCleaned": "RAM memory was cleaned successfully!",
+    "ConfirmCleanupTitle": "Confirm Cleanup",
+    "ConfirmCleanupMessage": "Are you sure you want to clean selected system folders?",
+    "CleanupSuccess": "Cleanup completed successfully.",
+    "CleanupError": "Error during cleanup: {0}",
+    "DriverUpdateAvailableTooltip": "A newer GPU driver version is available:\n{0}",
+    "BoostStarted": "Turbo Boost Activated!",
+    "BoostRestored": "System settings restored."
+  },
+  "Tray": {
+    "Show": "Show",
+    "BoostToggle": "Boost ON/OFF",
+    "Exit": "Exit"
   }
 }

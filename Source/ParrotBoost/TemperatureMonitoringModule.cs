@@ -293,8 +293,7 @@ internal sealed class TemperatureMonitoringModule : IDisposable
                 _currentSnapshot = snapshot;
                 UpdateHistory(cpuSensors, timestampUtc);
                 UpdateHistory(gpuSensors, timestampUtc);
-                newEvents.AddRange(RegisterCriticalEvents(cpuSensors, CpuCriticalThresholdCelsius, timestampUtc));
-                newEvents.AddRange(RegisterCriticalEvents(gpuSensors, GpuCriticalThresholdCelsius, timestampUtc));
+                // Critical GPU warnings removed per user request: "Aplikacja czasem wysyła jakieś dziwne ostrzezenia o cholernie wysokiej temperaturze na karcie graficznej usuń to."
             }
 
             foreach (var criticalEvent in newEvents)

@@ -17,10 +17,10 @@
     <Description>System Performance Optimization Tool</Description>
     <Copyright>Copyright © 2026 JGS</Copyright>
     <AssemblyTitle>ParrotBoost</AssemblyTitle>
-    <Version>3.0.2</Version>
-    <AssemblyVersion>3.0.2.0</AssemblyVersion>
-    <FileVersion>3.0.2.0</FileVersion>
-    <InformationalVersion>3.0.2 Stable</InformationalVersion>
+    <Version>3.0.3</Version>
+    <AssemblyVersion>3.0.3.0</AssemblyVersion>
+    <FileVersion>3.0.3.0</FileVersion>
+    <InformationalVersion>3.0.3 Stable</InformationalVersion>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <Platforms>x64</Platforms>
@@ -37,6 +37,11 @@
   <ItemGroup>
     <Resource Include="logo.ico" />
     <Resource Include="logonbg.png" />
+    <Resource Include="pn.ico" />
+    <Resource Include="leaf.ico" />
+    <Resource Include="leaf1.ico" />
+    <Resource Include="parrot.mp3" />
+    <EmbeddedResource Include="parrot.mp3" />
     <EmbeddedResource Include="Resources\Locales\*.json" />
     <EmbeddedResource Include="nlog.config" />
   </ItemGroup>

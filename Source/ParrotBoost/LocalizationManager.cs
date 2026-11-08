@@ -13,11 +13,13 @@ public class LocalizationManager
     public static LocalizationManager Instance => _instance ??= new LocalizationManager();
 
     private Dictionary<string, object>? _currentLocalization;
+    public string CurrentLanguage { get; private set; } = "pl-PL";
 
     public string this[string key] => GetString(key);
 
     public void SetLanguage(string languageCode)
     {
+        CurrentLanguage = languageCode;
         try
         {
             var assembly = Assembly.GetExecutingAssembly();

@@ -104,13 +104,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public MainWindow()
     {
+        _isApplyingSettings = true;
+        _settings = SettingsManager.Load();
         InitializeComponent();
         _hardwareTelemetry = new HardwareTelemetryService(_compatibilityProfile);
         _hardwareTelemetry.CriticalTemperatureDetected += OnCriticalTemperatureDetected;
         _runtimeOptimizer = new ParrotBoostRuntimeOptimizer(_compatibilityProfile);
         DataContext = this;
         
-        _settings = SettingsManager.Load();
         ApplySettings();
         
         Loaded += MainWindow_Loaded;
@@ -141,6 +142,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
     private List<GpuDriverUpdateService.DriverInfo> _lastDriverResults = new();
+    private bool _isApplyingSettings = true;
+    private System.Windows.Threading.DispatcherTimer? _startupAnimationTimer;
+    private DateTime _startupAnimationStartTime;
+    private System.Windows.Controls.Image? _flyingParrot;
+    private RotateTransform? _parrotRotateTransform;
+    private readonly List<StartupLeaf> _startupLeaves = new();
+
+    private sealed class StartupLeaf
+    {
+        public System.Windows.Controls.Image Image { get; set; } = null!;
+        public double SpawnProgress { get; set; }
+        public bool IsSpawned { get; set; }
+        public double StartX { get; set; }
+        public double StartY { get; set; }
+        public double SwayAmp { get; set; }
+        public double SpinSpeed { get; set; }
+        public RotateTransform RotateTransform { get; set; } = null!;
+    }
 
     private async Task CheckForDriverUpdatesAsync()
     {
@@ -193,9 +212,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             GpuDriverBtn.Foreground = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E67E22"));
             GpuDriverBtn.FontWeight = FontWeights.Bold;
 
-            GpuDriverBtn.ToolTip = "Nowa wersja sterownika jest dostępna:\n" +
-                string.Join("\n", availableUpdates.Select(u =>
-                    $"{u.GpuName}: {u.InstalledVersion} -> {u.LatestVersion}"));
+            string tipTemplate = LocalizationManager.Instance.GetString("Notifications.DriverUpdateAvailableTooltip");
+            string updateDetails = string.Join("\n", availableUpdates.Select(u => $"{u.GpuName}: {u.InstalledVersion} -> {u.LatestVersion}"));
+            GpuDriverBtn.ToolTip = string.Format(tipTemplate, updateDetails);
             return;
         }
 
@@ -459,111 +478,100 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         LocalizationManager.Instance.SetLanguage(_settings.Language);
         ApplyTheme(_settings.IsDarkMode);
-        
-        LaunchAtStartupCheck.IsChecked = _settings.LaunchAtStartup;
-        MinimizeToTrayCheck.IsChecked = _settings.MinimizeToTray;
-        CheckUpdatesOnStartupCheck.IsChecked = _settings.CheckForUpdatesOnStartup;
+        SyncSettingsUiFromModel();
+    }
 
-        OptBlockDeliveryUploadCheck.IsChecked = _settings.OptBlockDeliveryUpload;
-        OptDisableTelemetryTasksCheck.IsChecked = _settings.OptDisableTelemetryTasks;
-        OptDisableAdvertisingIdCheck.IsChecked = _settings.OptDisableAdvertisingId;
-        OptDisableDiagnosticDataCheck.IsChecked = _settings.OptDisableDiagnosticData;
-        OptDisableActivityHistoryCheck.IsChecked = _settings.OptDisableActivityHistory;
-        OptDisableLocationTrackingCheck.IsChecked = _settings.OptDisableLocationTracking;
-        OptDisableFeedbackNotificationsCheck.IsChecked = _settings.OptDisableFeedbackNotifications;
-        OptDisableCopilotCheck.IsChecked = _settings.OptDisableCopilot;
-        OptDisableRecallCheck.IsChecked = _settings.OptDisableRecall;
-        OptDisableClickToDoCheck.IsChecked = _settings.OptDisableClickToDo;
-        OptDisableGenerativeSearchAiCheck.IsChecked = _settings.OptDisableGenerativeSearchAi;
-        OptDisableAppAiFeaturesCheck.IsChecked = _settings.OptDisableAppAiFeatures;
-        OptDisableEdgeAiCheck.IsChecked = _settings.OptDisableEdgeAi;
-        OptServicesCheck.IsChecked = _settings.OptServices;
-        OptMemoryCheck.IsChecked = _settings.OptMemory;
-        OptTasksCheck.IsChecked = _settings.OptTasks;
-        OptNtfsCheck.IsChecked = _settings.OptNtfs;
-        OptPriorityCheck.IsChecked = _settings.OptPriority;
-        OptUsbCheck.IsChecked = _settings.OptUsb;
-        OptDeliveryCheck.IsChecked = _settings.OptDelivery;
-        OptTickCheck.IsChecked = _settings.OptTick;
-        GameModeCheck.IsChecked = _settings.EnableGameMode;
-
-        CleanPrefetchCheck.IsChecked = _settings.CleanPrefetch;
-        CleanTempCheck.IsChecked = _settings.CleanTemp;
-        CleanWinTempCheck.IsChecked = _settings.CleanWinTemp;
-        CleanUpdateCacheCheck.IsChecked = _settings.CleanUpdateCache;
-        CleanRecycleBinCheck.IsChecked = _settings.CleanRecycleBin;
-        CleanBrowserCacheCheck.IsChecked = _settings.CleanBrowserCache;
-        CleanThumbnailsCheck.IsChecked = _settings.CleanThumbnails;
-        CleanErrorReportingCheck.IsChecked = _settings.CleanErrorReporting;
-        CleanSystemLogsCheck.IsChecked = _settings.CleanSystemLogs;
-
-        if (CpuLimitSlider != null)
+    private void SyncSettingsUiFromModel()
+    {
+        _isApplyingSettings = true;
+        try
         {
-            CpuLimitSlider.Value = _settings.CpuUsageLimitPercent;
-        }
-        if (CpuLimitValueText != null)
-        {
-            CpuLimitValueText.Text = $"{_settings.CpuUsageLimitPercent}%";
-        }
-        RefreshTurboParrotBadge();
-        RefreshAntimalwareStatus();
+            if (LaunchAtStartupCheck != null) LaunchAtStartupCheck.IsChecked = _settings.LaunchAtStartup;
+            if (MinimizeToTrayCheck != null) MinimizeToTrayCheck.IsChecked = _settings.MinimizeToTray;
+            if (CheckUpdatesOnStartupCheck != null) CheckUpdatesOnStartupCheck.IsChecked = _settings.CheckForUpdatesOnStartup;
 
-        foreach (ComboBoxItem item in LanguageSelector.Items)
-        {
-            if (item.Tag?.ToString() == _settings.Language)
+            if (OptBlockDeliveryUploadCheck != null) OptBlockDeliveryUploadCheck.IsChecked = _settings.OptBlockDeliveryUpload;
+            if (OptDisableTelemetryTasksCheck != null) OptDisableTelemetryTasksCheck.IsChecked = _settings.OptDisableTelemetryTasks;
+            if (OptDisableAdvertisingIdCheck != null) OptDisableAdvertisingIdCheck.IsChecked = _settings.OptDisableAdvertisingId;
+            if (OptDisableDiagnosticDataCheck != null) OptDisableDiagnosticDataCheck.IsChecked = _settings.OptDisableDiagnosticData;
+            if (OptDisableActivityHistoryCheck != null) OptDisableActivityHistoryCheck.IsChecked = _settings.OptDisableActivityHistory;
+            if (OptDisableLocationTrackingCheck != null) OptDisableLocationTrackingCheck.IsChecked = _settings.OptDisableLocationTracking;
+            if (OptDisableFeedbackNotificationsCheck != null) OptDisableFeedbackNotificationsCheck.IsChecked = _settings.OptDisableFeedbackNotifications;
+            if (OptDisableCopilotCheck != null) OptDisableCopilotCheck.IsChecked = _settings.OptDisableCopilot;
+            if (OptDisableRecallCheck != null) OptDisableRecallCheck.IsChecked = _settings.OptDisableRecall;
+            if (OptDisableClickToDoCheck != null) OptDisableClickToDoCheck.IsChecked = _settings.OptDisableClickToDo;
+            if (OptDisableGenerativeSearchAiCheck != null) OptDisableGenerativeSearchAiCheck.IsChecked = _settings.OptDisableGenerativeSearchAi;
+            if (OptDisableAppAiFeaturesCheck != null) OptDisableAppAiFeaturesCheck.IsChecked = _settings.OptDisableAppAiFeatures;
+            if (OptDisableEdgeAiCheck != null) OptDisableEdgeAiCheck.IsChecked = _settings.OptDisableEdgeAi;
+            if (OptServicesCheck != null) OptServicesCheck.IsChecked = _settings.OptServices;
+            if (OptMemoryCheck != null) OptMemoryCheck.IsChecked = _settings.OptMemory;
+            if (OptTasksCheck != null) OptTasksCheck.IsChecked = _settings.OptTasks;
+            if (OptNtfsCheck != null) OptNtfsCheck.IsChecked = _settings.OptNtfs;
+            if (OptPriorityCheck != null) OptPriorityCheck.IsChecked = _settings.OptPriority;
+            if (OptUsbCheck != null) OptUsbCheck.IsChecked = _settings.OptUsb;
+            if (OptDeliveryCheck != null) OptDeliveryCheck.IsChecked = _settings.OptDelivery;
+            if (OptTickCheck != null) OptTickCheck.IsChecked = _settings.OptTick;
+            if (GameModeCheck != null) GameModeCheck.IsChecked = _settings.EnableGameMode;
+
+            if (CleanPrefetchCheck != null) CleanPrefetchCheck.IsChecked = _settings.CleanPrefetch;
+            if (CleanTempCheck != null) CleanTempCheck.IsChecked = _settings.CleanTemp;
+            if (CleanWinTempCheck != null) CleanWinTempCheck.IsChecked = _settings.CleanWinTemp;
+            if (CleanUpdateCacheCheck != null) CleanUpdateCacheCheck.IsChecked = _settings.CleanUpdateCache;
+            if (CleanRecycleBinCheck != null) CleanRecycleBinCheck.IsChecked = _settings.CleanRecycleBin;
+            if (CleanBrowserCacheCheck != null) CleanBrowserCacheCheck.IsChecked = _settings.CleanBrowserCache;
+            if (CleanThumbnailsCheck != null) CleanThumbnailsCheck.IsChecked = _settings.CleanThumbnails;
+            if (CleanErrorReportingCheck != null) CleanErrorReportingCheck.IsChecked = _settings.CleanErrorReporting;
+            if (CleanSystemLogsCheck != null) CleanSystemLogsCheck.IsChecked = _settings.CleanSystemLogs;
+
+            if (CpuLimitSlider != null)
             {
-                LanguageSelector.SelectedItem = item;
-                break;
+                CpuLimitSlider.Value = _settings.CpuUsageLimitPercent;
             }
+            if (CpuLimitValueText != null)
+            {
+                CpuLimitValueText.Text = $"{_settings.CpuUsageLimitPercent}%";
+            }
+
+            if (LanguageSelector != null)
+            {
+                foreach (ComboBoxItem item in LanguageSelector.Items)
+                {
+                    if (item.Tag?.ToString() == _settings.Language)
+                    {
+                        LanguageSelector.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+
+            RefreshTurboParrotBadge();
+        }
+        finally
+        {
+            _isApplyingSettings = false;
         }
     }
 
     private void SaveSettings()
     {
-        _settings.LaunchAtStartup = LaunchAtStartupCheck.IsChecked ?? false;
-        _settings.MinimizeToTray = MinimizeToTrayCheck.IsChecked ?? true;
-        _settings.CheckForUpdatesOnStartup = CheckUpdatesOnStartupCheck.IsChecked ?? true;
-        if (CpuLimitSlider != null)
+        if (_isApplyingSettings) return;
+        try
         {
-            _settings.CpuUsageLimitPercent = (int)Math.Round(CpuLimitSlider.Value);
+            _settings.ParrotBoostSystemEnabled = IsBoostActive;
+            if (LaunchAtStartupCheck?.IsChecked is bool launch) _settings.LaunchAtStartup = launch;
+            if (MinimizeToTrayCheck?.IsChecked is bool tray) _settings.MinimizeToTray = tray;
+            if (CheckUpdatesOnStartupCheck?.IsChecked is bool chkUpd) _settings.CheckForUpdatesOnStartup = chkUpd;
+            if (CpuLimitSlider != null)
+            {
+                _settings.CpuUsageLimitPercent = (int)Math.Round(CpuLimitSlider.Value);
+            }
+
+            SettingsManager.Save(_settings);
         }
-
-        _settings.OptBlockDeliveryUpload = OptBlockDeliveryUploadCheck.IsChecked ?? true;
-        _settings.OptDisableTelemetryTasks = OptDisableTelemetryTasksCheck.IsChecked ?? true;
-        _settings.OptDisableAdvertisingId = OptDisableAdvertisingIdCheck.IsChecked ?? true;
-        _settings.OptDisableDiagnosticData = OptDisableDiagnosticDataCheck.IsChecked ?? true;
-        _settings.OptDisableActivityHistory = OptDisableActivityHistoryCheck.IsChecked ?? true;
-        _settings.OptDisableLocationTracking = OptDisableLocationTrackingCheck.IsChecked ?? true;
-        _settings.OptDisableFeedbackNotifications = OptDisableFeedbackNotificationsCheck.IsChecked ?? true;
-        _settings.OptDisableCopilot = OptDisableCopilotCheck.IsChecked ?? true;
-        _settings.OptDisableRecall = OptDisableRecallCheck.IsChecked ?? true;
-        _settings.OptDisableClickToDo = OptDisableClickToDoCheck.IsChecked ?? true;
-        _settings.OptDisableGenerativeSearchAi = OptDisableGenerativeSearchAiCheck.IsChecked ?? true;
-        _settings.OptDisableAppAiFeatures = OptDisableAppAiFeaturesCheck.IsChecked ?? true;
-        _settings.OptDisableEdgeAi = OptDisableEdgeAiCheck.IsChecked ?? true;
-        _settings.OptServices = OptServicesCheck.IsChecked ?? true;
-        _settings.OptMemory = OptMemoryCheck.IsChecked ?? true;
-        _settings.OptTasks = OptTasksCheck.IsChecked ?? true;
-        _settings.OptNtfs = OptNtfsCheck.IsChecked ?? true;
-        _settings.OptPriority = OptPriorityCheck.IsChecked ?? true;
-        _settings.OptUsb = OptUsbCheck.IsChecked ?? true;
-        _settings.OptDelivery = OptDeliveryCheck.IsChecked ?? true;
-        _settings.OptTick = OptTickCheck.IsChecked ?? true;
-        _settings.EnableGameMode = GameModeCheck.IsChecked ?? false;
-
-        _settings.CleanPrefetch = CleanPrefetchCheck.IsChecked ?? true;
-        _settings.CleanTemp = CleanTempCheck.IsChecked ?? true;
-        _settings.CleanWinTemp = CleanWinTempCheck.IsChecked ?? true;
-        _settings.CleanUpdateCache = CleanUpdateCacheCheck.IsChecked ?? true;
-        _settings.CleanRecycleBin = CleanRecycleBinCheck.IsChecked ?? true;
-        _settings.CleanBrowserCache = CleanBrowserCacheCheck.IsChecked ?? true;
-        _settings.CleanThumbnails = CleanThumbnailsCheck.IsChecked ?? true;
-        _settings.CleanErrorReporting = CleanErrorReportingCheck.IsChecked ?? true;
-        _settings.CleanSystemLogs = CleanSystemLogsCheck.IsChecked ?? true;
-
-        SettingsManager.Save(_settings);
-        ApplyPrivacyTweaks();
-        DisableMicrosoftAiSlop();
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to save user settings.");
+        }
     }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -593,6 +601,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Theme_Click(object sender, RoutedEventArgs e)
     {
+        if (_isApplyingSettings) return;
         _settings.IsDarkMode = !_settings.IsDarkMode;
         ApplyTheme(_settings.IsDarkMode);
         SettingsManager.Save(_settings);
@@ -600,44 +609,30 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void ApplyTheme(bool isDark)
     {
-        if (isDark)
+        App.ApplyThemeResources(Resources, isDark);
+        if (System.Windows.Application.Current != null)
         {
-            Resources["WindowBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(15, 20, 25));
-            Resources["CardBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(25, 30, 35));
-            Resources["TextPrimary"] = System.Windows.Media.Brushes.White;
-            Resources["TextSecondary"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(160, 170, 180));
-            Resources["BorderBrush"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 50, 55));
-            Resources["HeaderBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(15, 20, 25));
-            Resources["BoostButtonBorderBrush"] = System.Windows.Media.Brushes.White;
-            Resources["SliderTrackBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(20, 24, 30));
-            Resources["SliderTrackBorder"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(38, 46, 58));
-            Resources["SliderThumbBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(22, 27, 34));
-            if (ThemeBtn != null) 
-            {
-                var textBlock = ThemeBtn.Content as TextBlock;
-                if (textBlock != null) textBlock.Text = "";
-            }
-            if (CloseButton != null) CloseButton.Foreground = System.Windows.Media.Brushes.White;
+            App.ApplyThemeResources(System.Windows.Application.Current.Resources, isDark);
         }
-        else
+
+        var winBg = isDark ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(15, 20, 25)) : new SolidColorBrush(System.Windows.Media.Color.FromRgb(248, 249, 250));
+        var headerBg = isDark ? winBg : System.Windows.Media.Brushes.White;
+        var textPrim = isDark ? System.Windows.Media.Brushes.White : new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 52, 54));
+
+        Background = winBg;
+        if (WindowFrame != null) WindowFrame.Background = winBg;
+        if (RootGrid != null) RootGrid.Background = winBg;
+        if (TitleBarBorder != null) TitleBarBorder.Background = headerBg;
+        if (BottomBarBorder != null) BottomBarBorder.Background = headerBg;
+        if (SettingsOverlay != null) SettingsOverlay.Background = winBg;
+
+        if (ThemeBtn != null && ThemeBtn.Content is TextBlock tb) 
         {
-            Resources["WindowBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(248, 249, 250));
-            Resources["CardBackground"] = System.Windows.Media.Brushes.White;
-            Resources["TextPrimary"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 52, 54));
-            Resources["TextSecondary"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(99, 110, 114));
-            Resources["BorderBrush"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(223, 230, 233));
-            Resources["HeaderBackground"] = System.Windows.Media.Brushes.White;
-            Resources["BoostButtonBorderBrush"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(20, 24, 28));
-            Resources["SliderTrackBackground"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(226, 232, 240));
-            Resources["SliderTrackBorder"] = new SolidColorBrush(System.Windows.Media.Color.FromRgb(203, 213, 225));
-            Resources["SliderThumbBackground"] = System.Windows.Media.Brushes.White;
-            if (ThemeBtn != null) 
-            {
-                var textBlock = ThemeBtn.Content as TextBlock;
-                if (textBlock != null) textBlock.Text = "";
-            }
-            if (CloseButton != null) CloseButton.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(45, 52, 54));
+            tb.Text = isDark ? "" : "";
         }
+        if (CloseButton != null) CloseButton.Foreground = isDark ? System.Windows.Media.Brushes.White : textPrim;
+
+        RefreshTurboParrotBadge();
     }
 
     private void SetupTrayIcon()
@@ -661,16 +656,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _notifyIcon.Text = "ParrotBoost";
         
         var contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add("Show", null, (s, e) =>
+        string showTxt = LocalizationManager.Instance.GetString("Tray.Show");
+        string boostTxt = LocalizationManager.Instance.GetString("Tray.BoostToggle");
+        string exitTxt = LocalizationManager.Instance.GetString("Tray.Exit");
+
+        contextMenu.Items.Add(showTxt, null, (s, e) =>
         {
             Show();
             WindowState = WindowState.Normal;
             if (_performanceTimer != null) _performanceTimer.Interval = _compatibilityProfile.TelemetryRefreshInterval;
             _hardwareTelemetry.SetBackgroundMode(false);
         });
-        contextMenu.Items.Add("Boost ON/OFF", null, async (s, e) => await Dispatcher.InvokeAsync(ToggleBoostAsync));
+        contextMenu.Items.Add(boostTxt, null, async (s, e) => await Dispatcher.InvokeAsync(ToggleBoostAsync));
         contextMenu.Items.Add("-");
-        contextMenu.Items.Add("Exit", null, (s, e) => { System.Windows.Application.Current.Shutdown(); });
+        contextMenu.Items.Add(exitTxt, null, (s, e) =>
+        {
+            SaveSettings();
+            System.Windows.Application.Current.Shutdown();
+        });
         
         _notifyIcon.ContextMenuStrip = contextMenu;
         _notifyIcon.DoubleClick += (s, e) =>
@@ -713,23 +716,157 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         UpdateRootClip();
+        StartStartupParrotFlightAnimation();
 
         var startupTimer = Stopwatch.StartNew();
         await InitializeDeferredStartupAsync();
 
-        var minimumSplash = TimeSpan.FromMilliseconds(300);
+        var minimumSplash = TimeSpan.FromMilliseconds(4000);
         if (startupTimer.Elapsed < minimumSplash)
         {
             await Task.Delay(minimumSplash - startupTimer.Elapsed);
         }
 
+        _startupAnimationTimer?.Stop();
         var fadeAnim = new DoubleAnimation(0, TimeSpan.FromSeconds(0.4));
         fadeAnim.Completed += (s, _) =>
         {
             SplashOverlay.IsHitTestVisible = false;
             SplashOverlay.Visibility = Visibility.Collapsed;
+            SplashCanvas?.Children.Clear();
         };
         SplashOverlay.BeginAnimation(OpacityProperty, fadeAnim);
+    }
+
+    private void StartStartupParrotFlightAnimation()
+    {
+        if (SplashCanvas == null) return;
+        SplashCanvas.Children.Clear();
+        _startupLeaves.Clear();
+
+        // 1. Create flying parrot (pn.ico)
+        _flyingParrot = new System.Windows.Controls.Image
+        {
+            Width = 46,
+            Height = 46,
+            RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
+            IsHitTestVisible = false
+        };
+        try
+        {
+            _flyingParrot.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/pn.ico", UriKind.Absolute));
+        }
+        catch { }
+
+        _parrotRotateTransform = new RotateTransform(0);
+        _flyingParrot.RenderTransform = _parrotRotateTransform;
+        SplashCanvas.Children.Add(_flyingParrot);
+        Canvas.SetLeft(_flyingParrot, -80);
+        Canvas.SetTop(_flyingParrot, 270);
+
+        // 2. Prepare falling leaves behind parrot (leaf.ico and leaf1.ico)
+        double[] spawnIntervals = { 0.12, 0.26, 0.40, 0.55, 0.69, 0.83 };
+        for (int i = 0; i < spawnIntervals.Length; i++)
+        {
+            string ico = (i % 2 == 0) ? "leaf.ico" : "leaf1.ico";
+            var leafImg = new System.Windows.Controls.Image
+            {
+                Width = 22 + (i % 3) * 3,
+                Height = 22 + (i % 3) * 3,
+                Opacity = 0,
+                RenderTransformOrigin = new System.Windows.Point(0.5, 0.5),
+                IsHitTestVisible = false
+            };
+            try
+            {
+                leafImg.Source = new System.Windows.Media.Imaging.BitmapImage(new Uri($"pack://application:,,,/{ico}", UriKind.Absolute));
+            }
+            catch { }
+
+            var rot = new RotateTransform(i * 35);
+            leafImg.RenderTransform = rot;
+
+            _startupLeaves.Add(new StartupLeaf
+            {
+                Image = leafImg,
+                SpawnProgress = spawnIntervals[i],
+                IsSpawned = false,
+                SwayAmp = 18 + (i % 3) * 6,
+                SpinSpeed = (i % 2 == 0 ? 3.5 : -3.0),
+                RotateTransform = rot
+            });
+            SplashCanvas.Children.Add(leafImg);
+            Canvas.SetLeft(leafImg, -100);
+            Canvas.SetTop(leafImg, -100);
+        }
+
+        _startupAnimationStartTime = DateTime.UtcNow;
+        _startupAnimationTimer = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Render)
+        {
+            Interval = TimeSpan.FromMilliseconds(20)
+        };
+        _startupAnimationTimer.Tick += OnStartupAnimationTick;
+        _startupAnimationTimer.Start();
+    }
+
+    private void OnStartupAnimationTick(object? sender, EventArgs e)
+    {
+        double elapsedMs = (DateTime.UtcNow - _startupAnimationStartTime).TotalMilliseconds;
+        const double totalMs = 3800.0;
+        double progress = Math.Max(0.0, Math.Min(1.0, elapsedMs / totalMs));
+
+        double width = Math.Max(800, ActualWidth > 0 ? ActualWidth : 800);
+        double height = Math.Max(600, ActualHeight > 0 ? ActualHeight : 600);
+
+        // Smooth sine wave trajectory ("falka")
+        double startX = -60;
+        double endX = width + 80;
+        double parrotX = startX + progress * (endX - startX);
+        double baseY = height * 0.46;
+        double waveY = baseY + Math.Sin(progress * 3.5 * Math.PI * 2) * 65.0;
+
+        if (_flyingParrot != null)
+        {
+            Canvas.SetLeft(_flyingParrot, parrotX);
+            Canvas.SetTop(_flyingParrot, waveY);
+
+            if (_parrotRotateTransform != null)
+            {
+                _parrotRotateTransform.Angle = Math.Cos(progress * 3.5 * Math.PI * 2) * 16.0;
+            }
+        }
+
+        // Leaves falling and swaying behind
+        foreach (var leaf in _startupLeaves)
+        {
+            if (!leaf.IsSpawned && progress >= leaf.SpawnProgress)
+            {
+                leaf.IsSpawned = true;
+                leaf.StartX = parrotX - 10;
+                leaf.StartY = waveY + 22;
+                leaf.Image.Opacity = 0.9;
+            }
+
+            if (leaf.IsSpawned)
+            {
+                double leafAge = Math.Max(0.0, Math.Min(1.0, (progress - leaf.SpawnProgress) / (1.0 - leaf.SpawnProgress)));
+                double currentX = leaf.StartX + (leafAge * 45) + Math.Sin(leafAge * Math.PI * 5) * leaf.SwayAmp;
+                double currentY = leaf.StartY + leafAge * 150.0;
+
+                Canvas.SetLeft(leaf.Image, currentX);
+                Canvas.SetTop(leaf.Image, currentY);
+
+                leaf.RotateTransform.Angle += leaf.SpinSpeed;
+                leaf.Image.Opacity = Math.Max(0.0, 0.9 * (1.0 - leafAge * 0.85));
+            }
+        }
+
+        if (elapsedMs >= 4000)
+        {
+            _startupAnimationTimer?.Stop();
+            SplashCanvas.Visibility = Visibility.Collapsed;
+            SplashCanvas.Children.Clear();
+        }
     }
 
     private async Task InitializeDeferredStartupAsync()
@@ -752,6 +889,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     protected override void OnClosed(EventArgs e)
     {
+        SaveSettings();
         _startupWorkCancellation.Cancel();
         _performanceTimer?.Stop();
         _notifyIcon?.Dispose();
@@ -821,7 +959,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    System.Windows.MessageBox.Show($"Posiadasz najnowszą wersję ParrotBoost (v{ApplicationUpdateService.CurrentVersion}).", "Aktualizacje", MessageBoxButton.OK, MessageBoxImage.Information);
+                    string title = LocalizationManager.Instance.GetString("Notifications.UpdateTitle");
+                    string msg = string.Format(LocalizationManager.Instance.GetString("Notifications.UpdateLatest"), ApplicationUpdateService.CurrentVersion);
+                    System.Windows.MessageBox.Show(msg, title, MessageBoxButton.OK, MessageBoxImage.Information);
                 });
             }
         }
@@ -832,7 +972,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    System.Windows.MessageBox.Show($"Nie udało się sprawdzić aktualizacji: {ex.Message}", "Błąd", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    string title = LocalizationManager.Instance.GetString("Notifications.UpdateTitle");
+                    string msg = string.Format(LocalizationManager.Instance.GetString("Notifications.UpdateFailed"), ex.Message);
+                    System.Windows.MessageBox.Show(msg, title, MessageBoxButton.OK, MessageBoxImage.Warning);
                 });
             }
         }
@@ -910,7 +1052,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 GC.WaitForPendingFinalizers();
             });
 
-            System.Windows.MessageBox.Show("Pamięć RAM została pomyślnie wyczyszczona!", "ParrotBoost", MessageBoxButton.OK, MessageBoxImage.Information);
+            string ramMsg = LocalizationManager.Instance.GetString("Notifications.RamCleaned");
+            System.Windows.MessageBox.Show(ramMsg, "ParrotBoost", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
@@ -1206,11 +1349,20 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             await RunBoostSequence();
             IsBoostActive = true;
+            _settings.ParrotBoostSystemEnabled = true;
+            ParrotBoostSystemConfiguration.SetBoostEnabled(true);
+            SettingsManager.Save(_settings);
+            SoundPlayerHelper.PlayBoostSound();
+            RefreshTurboParrotBadge();
         }
         else
         {
             await RunRestoreSequence();
             IsBoostActive = false;
+            _settings.ParrotBoostSystemEnabled = false;
+            ParrotBoostSystemConfiguration.SetBoostEnabled(false);
+            SettingsManager.Save(_settings);
+            RefreshTurboParrotBadge();
         }
     }
 
@@ -1267,6 +1419,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _boostWorkflowStatusActive = false;
         BoostButton.IsEnabled = true;
         RefreshBoostPresentation();
+        RefreshTurboParrotBadge();
     }
 
     private void DisableUwpAnimations(bool disable)
@@ -1322,6 +1475,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         BoostButton.IsEnabled = true;
         RefreshBoostPresentation();
+        RefreshTurboParrotBadge();
     }
 
     private void CreateTurboParrotPowerPlan()
@@ -1479,16 +1633,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnCriticalTemperatureDetected(CriticalTemperatureEvent criticalEvent)
     {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (DateTime.UtcNow - _lastCriticalToastUtc < TimeSpan.FromSeconds(10))
-            {
-                return;
-            }
-
-            _lastCriticalToastUtc = DateTime.UtcNow;
-            _notifyIcon?.ShowBalloonTip(3000, "ParrotBoost - Ostrzeżenie", criticalEvent.Message, ToolTipIcon.Warning);
-        });
+        // GPU critical warning popup removed per user request:
+        // "Aplikacja czasem wysyła jakieś dziwne ostrzezenia o cholernie wysokiej temperaturze na karcie graficznej usuń to."
+        Logger.Debug("Temperature warning suppressed: {0}", criticalEvent.Message);
     }
 
     private SolidColorBrush GetLoadBrush(float load)
@@ -1500,9 +1647,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void Settings_Click(object sender, RoutedEventArgs e)
     {
+        SyncSettingsUiFromModel();
         RefreshTurboParrotBadge();
-        RefreshAntimalwareStatus();
-        DetectActualSystemSettings();
         NavigateTo("SettingsOverlay");
     }
 
@@ -1802,16 +1948,182 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private void RefreshTurboParrotBadge()
     {
         if (TurboParrotStatusBadge == null || ToggleTurboParrotBtn == null) return;
-        bool isActive = TurboParrotPowerPlanManager.IsTurboParrotActive();
+        bool isActive = TurboParrotPowerPlanManager.IsTurboParrotActive(forceRefresh: true);
+
         TurboParrotStatusBadge.Text = isActive 
             ? LocalizationManager.Instance.GetString("SettingsWindow.TurboParrotActive") 
             : LocalizationManager.Instance.GetString("SettingsWindow.TurboParrotDisabled");
         TurboParrotStatusBadge.Foreground = isActive
             ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0xCC, 0x71))
             : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8));
+
+        if (TurboParrotDot != null)
+        {
+            TurboParrotDot.Fill = isActive
+                ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0xCC, 0x71))
+                : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x94, 0xA3, 0xB8));
+        }
+
+        if (TurboParrotPill != null)
+        {
+            TurboParrotPill.Background = isActive
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(32, 0x2E, 0xCC, 0x71))
+                : new SolidColorBrush(System.Windows.Media.Color.FromArgb(20, 0x94, 0xA3, 0xB8));
+            TurboParrotPill.BorderBrush = isActive
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(90, 0x2E, 0xCC, 0x71))
+                : new SolidColorBrush(System.Windows.Media.Color.FromArgb(40, 0x94, 0xA3, 0xB8));
+        }
+
+        if (TurboParrotCardBorder != null)
+        {
+            TurboParrotCardBorder.BorderBrush = isActive
+                ? new SolidColorBrush(System.Windows.Media.Color.FromArgb(120, 0x2E, 0xCC, 0x71))
+                : (System.Windows.Media.Brush)FindResource("BorderBrush");
+        }
+
         ToggleTurboParrotBtn.Content = isActive 
             ? LocalizationManager.Instance.GetString("SettingsWindow.TurboParrotRestore") 
             : LocalizationManager.Instance.GetString("SettingsWindow.TurboParrotEnable");
+
+        ToggleTurboParrotBtn.Background = isActive
+            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(48, 54, 61))
+            : (System.Windows.Media.Brush)FindResource("ColorPrimaryBrush");
+    }
+
+    private void GeneralCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isApplyingSettings || sender is not System.Windows.Controls.CheckBox cb) return;
+        try
+        {
+            bool isChecked = cb.IsChecked == true;
+            switch (cb.Name)
+            {
+                case nameof(LaunchAtStartupCheck):
+                    _settings.LaunchAtStartup = isChecked;
+                    SetStartupRegistry(isChecked);
+                    break;
+                case nameof(MinimizeToTrayCheck):
+                    _settings.MinimizeToTray = isChecked;
+                    break;
+                case nameof(CheckUpdatesOnStartupCheck):
+                    _settings.CheckForUpdatesOnStartup = isChecked;
+                    break;
+            }
+            SettingsManager.Save(_settings);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error in GeneralCheckBox_Click");
+        }
+    }
+
+    private void ResetDefaultsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var title = LocalizationManager.Instance.GetString("Notifications.ConfirmResetTitle");
+            var msg = LocalizationManager.Instance.GetString("Notifications.ConfirmResetMessage");
+            var result = System.Windows.MessageBox.Show(
+                this,
+                msg,
+                title,
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Question);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            _settings = SettingsManager.ResetToFactoryDefaults();
+            ApplySettings();
+            SetStartupRegistry(false);
+
+            string successMsg = LocalizationManager.Instance.GetString("Notifications.ResetDefaultsSuccess");
+            ShowInAppToast(successMsg, LocalizationManager.Instance.GetString("SettingsWindow.Title"), "✅");
+            System.Windows.MessageBox.Show(this, successMsg, "ParrotBoost", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Failed to reset settings to factory defaults.");
+        }
+    }
+
+    private void ShowInAppToast(string message, string title = "ParrotBoost", string icon = "⚙️")
+    {
+        if (ToastBanner == null || ToastMessage == null || ToastTitle == null) return;
+        if (ToastIcon != null) ToastIcon.Text = icon;
+        ToastTitle.Text = title;
+        ToastMessage.Text = message;
+        ToastBanner.Visibility = Visibility.Visible;
+        ToastBanner.Opacity = 1;
+
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        timer.Tick += (s, e) =>
+        {
+            timer.Stop();
+            var fade = new DoubleAnimation(0, TimeSpan.FromSeconds(0.4));
+            fade.Completed += (_, _) => ToastBanner.Visibility = Visibility.Collapsed;
+            ToastBanner.BeginAnimation(OpacityProperty, fade);
+        };
+        timer.Start();
+    }
+
+    private void CleanupCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isApplyingSettings || sender is not System.Windows.Controls.CheckBox cb) return;
+        try
+        {
+            bool isChecked = cb.IsChecked == true;
+            switch (cb.Name)
+            {
+                case nameof(CleanPrefetchCheck): _settings.CleanPrefetch = isChecked; break;
+                case nameof(CleanTempCheck): _settings.CleanTemp = isChecked; break;
+                case nameof(CleanWinTempCheck): _settings.CleanWinTemp = isChecked; break;
+                case nameof(CleanUpdateCacheCheck): _settings.CleanUpdateCache = isChecked; break;
+                case nameof(CleanRecycleBinCheck): _settings.CleanRecycleBin = isChecked; break;
+                case nameof(CleanBrowserCacheCheck): _settings.CleanBrowserCache = isChecked; break;
+                case nameof(CleanThumbnailsCheck): _settings.CleanThumbnails = isChecked; break;
+                case nameof(CleanErrorReportingCheck): _settings.CleanErrorReporting = isChecked; break;
+                case nameof(CleanSystemLogsCheck): _settings.CleanSystemLogs = isChecked; break;
+            }
+            SettingsManager.Save(_settings);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error in CleanupCheckBox_Click");
+        }
+    }
+
+    private static void SetStartupRegistry(bool enable)
+    {
+        try
+        {
+            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run", true);
+            if (key != null)
+            {
+                if (enable)
+                {
+#if NET6_0_OR_GREATER
+                    string? exePath = Environment.ProcessPath ?? System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+#else
+                    string? exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+#endif
+                    if (!string.IsNullOrEmpty(exePath))
+                    {
+                        key.SetValue("ParrotBoost", $"\"{exePath}\"");
+                    }
+                }
+                else
+                {
+                    key.DeleteValue("ParrotBoost", false);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn(ex, "Failed to update startup registry run key.");
+        }
     }
 
     private void CpuLimitSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -1819,215 +2131,184 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (CpuLimitValueText == null) return;
         int val = (int)Math.Round(e.NewValue);
         CpuLimitValueText.Text = $"{val}%";
+        if (_isApplyingSettings) return;
+
         _settings.CpuUsageLimitPercent = val;
         SettingsManager.Save(_settings);
     }
 
-    private async void FastAntimalwareScanBtn_Click(object sender, RoutedEventArgs e)
-    {
-        FastAntimalwareScanBtn.IsEnabled = false;
-        AntimalwareProgressBar.Visibility = Visibility.Visible;
-        AntimalwareProgressBar.Value = 5;
-
-        AntimalwareStatusBadge.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE6, 0x7E, 0x22));
-        AntimalwareStatusBadge.Text = string.Format(LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningPrefix"), 5);
-        AntimalwareStatusText.Text = LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningMemory");
-
-        var sw = Stopwatch.StartNew();
-        using var scanCts = new CancellationTokenSource();
-
-        var progressTask = Task.Run(async () =>
-        {
-            int currentPercent = 5;
-            while (!scanCts.Token.IsCancellationRequested && currentPercent < 95)
-            {
-                await Task.Delay(200, scanCts.Token).ConfigureAwait(false);
-                if (scanCts.Token.IsCancellationRequested) break;
-
-                currentPercent = Math.Min(95, currentPercent + (currentPercent < 35 ? 4 : (currentPercent < 75 ? 2 : 1)));
-                string phaseText = currentPercent switch
-                {
-                    < 30 => LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningMemory"),
-                    < 70 => LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningProcesses"),
-                    _ => LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningFiles")
-                };
-
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    AntimalwareProgressBar.Value = currentPercent;
-                    AntimalwareStatusBadge.Text = string.Format(LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareScanningPrefix"), currentPercent);
-                    AntimalwareStatusText.Text = phaseText;
-                });
-            }
-        }, scanCts.Token);
-
-        bool success = await AntimalwareService.RunOptimizedQuickScanAsync();
-        scanCts.Cancel();
-        try { await progressTask; } catch { }
-        sw.Stop();
-
-        AntimalwareProgressBar.Value = 100;
-        AntimalwareStatusBadge.Text = LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareSafe");
-        AntimalwareStatusBadge.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0xCC, 0x71));
-        AntimalwareStatusText.Text = LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareSafe");
-        FastAntimalwareScanBtn.IsEnabled = true;
-
-        string reportTitle = LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareReportTitle");
-        string reportText = string.Format(
-            LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareReportText"), 
-            Math.Max(1, (int)Math.Round(sw.Elapsed.TotalSeconds)));
-
-        ShowNotificationReport(reportTitle, reportText, "🛡️");
-    }
-
-    private void ShowNotificationReport(string title, string message, string icon = "🛡️")
-    {
-        Dispatcher.InvokeAsync(() =>
-        {
-            if (ToastBanner == null || ToastTitle == null || ToastMessage == null || ToastIcon == null) return;
-            ToastTitle.Text = title;
-            ToastMessage.Text = message;
-            ToastIcon.Text = icon;
-            ToastBanner.Visibility = Visibility.Visible;
-
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(250));
-            ToastBanner.BeginAnimation(UIElement.OpacityProperty, fadeIn);
-
-            _notifyIcon?.ShowBalloonTip(4000, title, message.Replace("\n", " "), ToolTipIcon.Info);
-
-            Task.Delay(4500).ContinueWith(_ =>
-            {
-                Dispatcher.InvokeAsync(() =>
-                {
-                    var fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(350));
-                    fadeOut.Completed += (_, _) => ToastBanner.Visibility = Visibility.Collapsed;
-                    ToastBanner.BeginAnimation(UIElement.OpacityProperty, fadeOut);
-                });
-            });
-        });
-    }
-
-    private void RefreshAntimalwareStatus()
-    {
-        if (AntimalwareStatusBadge == null || AntimalwareStatusText == null) return;
-        var status = AntimalwareService.GetStatus();
-        AntimalwareStatusBadge.Text = status.IsServiceRunning 
-            ? LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareReady") 
-            : LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareCompleted");
-        AntimalwareStatusBadge.Foreground = status.IsServiceRunning
-            ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x2E, 0xCC, 0x71))
-            : new SolidColorBrush(System.Windows.Media.Color.FromRgb(0xE7, 0x4C, 0x3C));
-        AntimalwareStatusText.Text = status.IsServiceRunning 
-            ? LocalizationManager.Instance.GetString("SettingsWindow.AntimalwareDesc") 
-            : status.EngineStateDescription;
-    }
-
     private async void PerformanceCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not System.Windows.Controls.CheckBox cb) return;
-        bool isChecked = cb.IsChecked == true;
-        SaveSettings();
-
-        await Task.Run(() =>
+        if (_isApplyingSettings || sender is not System.Windows.Controls.CheckBox cb) return;
+        try
         {
-            switch (cb.Name)
+            bool isChecked = cb.IsChecked == true;
+            UpdatePerformanceSettingValue(cb.Name, isChecked);
+            SettingsManager.Save(_settings);
+
+            await Task.Run(() =>
             {
-                case nameof(OptBlockDeliveryUploadCheck):
-                case nameof(OptDeliveryCheck):
-                    if (isChecked) DisableDeliveryOptimization();
-                    else RestoreDeliveryOptimization();
-                    break;
+                try
+                {
+                    switch (cb.Name)
+                    {
+                        case nameof(OptBlockDeliveryUploadCheck):
+                        case nameof(OptDeliveryCheck):
+                            if (isChecked) DisableDeliveryOptimization();
+                            else RestoreDeliveryOptimization();
+                            break;
 
-                case nameof(OptDisableTelemetryTasksCheck):
-                    if (isChecked) DisableTelemetryScheduledTasks();
-                    else EnableTelemetryScheduledTasks();
-                    break;
+                        case nameof(OptDisableTelemetryTasksCheck):
+                            if (isChecked) DisableTelemetryScheduledTasks();
+                            else EnableTelemetryScheduledTasks();
+                            break;
 
-                case nameof(OptServicesCheck):
-                    if (isChecked) DisablePerformanceServices();
-                    else RestoreServices();
-                    break;
+                        case nameof(OptServicesCheck):
+                            if (isChecked) DisablePerformanceServices();
+                            else RestoreServices();
+                            break;
 
-                case nameof(OptMemoryCheck):
-                    if (isChecked) Dispatcher.InvokeAsync(() => CleanRam_Click(this, new RoutedEventArgs()));
-                    break;
+                        case nameof(OptMemoryCheck):
+                            if (isChecked) TrimWorkingSet();
+                            break;
 
-                case nameof(OptTasksCheck):
-                    if (isChecked) OptimizeTaskScheduler();
-                    else EnableAllScheduledTasks();
-                    break;
+                        case nameof(OptTasksCheck):
+                            if (isChecked) OptimizeTaskScheduler();
+                            else EnableAllScheduledTasks();
+                            break;
 
-                case nameof(OptNtfsCheck):
-                    DisableNtfsLastAccess(isChecked);
-                    break;
+                        case nameof(OptNtfsCheck):
+                            DisableNtfsLastAccess(isChecked);
+                            break;
 
-                case nameof(OptPriorityCheck):
-                    SetForegroundPriority(isChecked);
-                    break;
+                        case nameof(OptPriorityCheck):
+                            SetForegroundPriority(isChecked);
+                            break;
 
-                case nameof(OptUsbCheck):
-                    OptimizeUsbPower(isChecked);
-                    break;
+                        case nameof(OptUsbCheck):
+                            OptimizeUsbPower(isChecked);
+                            break;
 
-                case nameof(OptTickCheck):
-                    SetDynamicTick(!isChecked);
-                    SetHpet(!isChecked);
-                    break;
+                        case nameof(OptTickCheck):
+                            SetDynamicTick(!isChecked);
+                            SetHpet(!isChecked);
+                            break;
 
-                case nameof(GameModeCheck):
-                    if (isChecked) _gameModeService.Activate();
-                    else _gameModeService.Restore();
-                    break;
-            }
-        });
+                        case nameof(GameModeCheck):
+                            if (isChecked) _gameModeService.Activate();
+                            else _gameModeService.Restore();
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to apply/revert performance tweak for {0}", cb.Name);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error in PerformanceCheckBox_Click");
+        }
+    }
+
+    private void UpdatePerformanceSettingValue(string name, bool isChecked)
+    {
+        switch (name)
+        {
+            case nameof(OptBlockDeliveryUploadCheck): _settings.OptBlockDeliveryUpload = isChecked; break;
+            case nameof(OptDeliveryCheck): _settings.OptDelivery = isChecked; break;
+            case nameof(OptDisableTelemetryTasksCheck): _settings.OptDisableTelemetryTasks = isChecked; break;
+            case nameof(OptServicesCheck): _settings.OptServices = isChecked; break;
+            case nameof(OptMemoryCheck): _settings.OptMemory = isChecked; break;
+            case nameof(OptTasksCheck): _settings.OptTasks = isChecked; break;
+            case nameof(OptNtfsCheck): _settings.OptNtfs = isChecked; break;
+            case nameof(OptPriorityCheck): _settings.OptPriority = isChecked; break;
+            case nameof(OptUsbCheck): _settings.OptUsb = isChecked; break;
+            case nameof(OptTickCheck): _settings.OptTick = isChecked; break;
+            case nameof(GameModeCheck): _settings.EnableGameMode = isChecked; break;
+        }
     }
 
     private async void PrivacyAiCheckBox_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not System.Windows.Controls.CheckBox cb) return;
-        bool isChecked = cb.IsChecked == true;
-        SaveSettings();
-
-        await Task.Run(() =>
+        if (_isApplyingSettings || sender is not System.Windows.Controls.CheckBox cb) return;
+        try
         {
-            switch (cb.Name)
-            {
-                case nameof(OptDisableAdvertisingIdCheck):
-                    ApplySinglePrivacyTweak("advertising", isChecked);
-                    break;
-                case nameof(OptDisableDiagnosticDataCheck):
-                    ApplySinglePrivacyTweak("diagnostic", isChecked);
-                    break;
-                case nameof(OptDisableActivityHistoryCheck):
-                    ApplySinglePrivacyTweak("activity", isChecked);
-                    break;
-                case nameof(OptDisableLocationTrackingCheck):
-                    ApplySinglePrivacyTweak("location", isChecked);
-                    break;
-                case nameof(OptDisableFeedbackNotificationsCheck):
-                    ApplySinglePrivacyTweak("feedback", isChecked);
-                    break;
+            bool isChecked = cb.IsChecked == true;
+            UpdatePrivacyAiSettingValue(cb.Name, isChecked);
+            SettingsManager.Save(_settings);
 
-                case nameof(OptDisableCopilotCheck):
-                    ApplySingleAiTweak("copilot", isChecked);
-                    break;
-                case nameof(OptDisableRecallCheck):
-                    ApplySingleAiTweak("recall", isChecked);
-                    break;
-                case nameof(OptDisableClickToDoCheck):
-                    ApplySingleAiTweak("clicktodo", isChecked);
-                    break;
-                case nameof(OptDisableGenerativeSearchAiCheck):
-                    ApplySingleAiTweak("generativesearch", isChecked);
-                    break;
-                case nameof(OptDisableAppAiFeaturesCheck):
-                    ApplySingleAiTweak("appai", isChecked);
-                    break;
-                case nameof(OptDisableEdgeAiCheck):
-                    ApplySingleAiTweak("edgeai", isChecked);
-                    break;
-            }
-        });
+            await Task.Run(() =>
+            {
+                try
+                {
+                    switch (cb.Name)
+                    {
+                        case nameof(OptDisableAdvertisingIdCheck):
+                            ApplySinglePrivacyTweak("advertising", isChecked);
+                            break;
+                        case nameof(OptDisableDiagnosticDataCheck):
+                            ApplySinglePrivacyTweak("diagnostic", isChecked);
+                            break;
+                        case nameof(OptDisableActivityHistoryCheck):
+                            ApplySinglePrivacyTweak("activity", isChecked);
+                            break;
+                        case nameof(OptDisableLocationTrackingCheck):
+                            ApplySinglePrivacyTweak("location", isChecked);
+                            break;
+                        case nameof(OptDisableFeedbackNotificationsCheck):
+                            ApplySinglePrivacyTweak("feedback", isChecked);
+                            break;
+
+                        case nameof(OptDisableCopilotCheck):
+                            ApplySingleAiTweak("copilot", isChecked);
+                            break;
+                        case nameof(OptDisableRecallCheck):
+                            ApplySingleAiTweak("recall", isChecked);
+                            break;
+                        case nameof(OptDisableClickToDoCheck):
+                            ApplySingleAiTweak("clicktodo", isChecked);
+                            break;
+                        case nameof(OptDisableGenerativeSearchAiCheck):
+                            ApplySingleAiTweak("generativesearch", isChecked);
+                            break;
+                        case nameof(OptDisableAppAiFeaturesCheck):
+                            ApplySingleAiTweak("appai", isChecked);
+                            break;
+                        case nameof(OptDisableEdgeAiCheck):
+                            ApplySingleAiTweak("edgeai", isChecked);
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn(ex, "Failed to apply AI/Privacy tweak for {0}", cb.Name);
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error(ex, "Error in PrivacyAiCheckBox_Click");
+        }
+    }
+
+    private void UpdatePrivacyAiSettingValue(string name, bool isChecked)
+    {
+        switch (name)
+        {
+            case nameof(OptDisableAdvertisingIdCheck): _settings.OptDisableAdvertisingId = isChecked; break;
+            case nameof(OptDisableDiagnosticDataCheck): _settings.OptDisableDiagnosticData = isChecked; break;
+            case nameof(OptDisableActivityHistoryCheck): _settings.OptDisableActivityHistory = isChecked; break;
+            case nameof(OptDisableLocationTrackingCheck): _settings.OptDisableLocationTracking = isChecked; break;
+            case nameof(OptDisableFeedbackNotificationsCheck): _settings.OptDisableFeedbackNotifications = isChecked; break;
+            case nameof(OptDisableCopilotCheck): _settings.OptDisableCopilot = isChecked; break;
+            case nameof(OptDisableRecallCheck): _settings.OptDisableRecall = isChecked; break;
+            case nameof(OptDisableClickToDoCheck): _settings.OptDisableClickToDo = isChecked; break;
+            case nameof(OptDisableGenerativeSearchAiCheck): _settings.OptDisableGenerativeSearchAi = isChecked; break;
+            case nameof(OptDisableAppAiFeaturesCheck): _settings.OptDisableAppAiFeatures = isChecked; break;
+            case nameof(OptDisableEdgeAiCheck): _settings.OptDisableEdgeAi = isChecked; break;
+        }
     }
 
     private void ApplySinglePrivacyTweak(string tweakId, bool enable)
@@ -2039,35 +2320,69 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 case "advertising":
                     if (enable)
                     {
-                        Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0, RegistryValueKind.DWord);
-                        Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1);
                     }
                     else
                     {
-                        Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 1, RegistryValueKind.DWord);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 1);
                         RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy");
                     }
                     break;
 
                 case "diagnostic":
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "MaxTelemetryAllowed", enable ? 0 : 3, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "MaxTelemetryAllowed", 0);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Diagnostics\DiagTrack", "ShowDiagData", 0);
+                    }
+                    else
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "MaxTelemetryAllowed", 3);
+                    }
                     break;
 
                 case "activity":
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "EnableActivityFeed", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "PublishUserActivities", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "UploadUserActivities", enable ? 0 : 1, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "EnableActivityFeed", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "PublishUserActivities", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "UploadUserActivities", 0);
+                    }
+                    else
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "EnableActivityFeed", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "PublishUserActivities", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\System", "UploadUserActivities", 1);
+                    }
                     break;
 
                 case "location":
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", "Value", enable ? "Deny" : "Allow", RegistryValueKind.String);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1);
+                        RegistryHelper.SetString(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", "Value", "Deny");
+                    }
+                    else
+                    {
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation");
+                        RegistryHelper.SetString(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location", "Value", "Allow");
+                    }
                     break;
 
                 case "feedback":
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "DoNotShowFeedbackNotifications", enable ? 1 : 0, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "DoNotShowFeedbackNotifications", 1);
+                    }
+                    else
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Siuf\Rules", "NumberOfSIUFInPeriod", 1);
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "DoNotShowFeedbackNotifications");
+                    }
                     break;
             }
         }
@@ -2084,45 +2399,103 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             switch (tweakId)
             {
                 case "copilot":
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowCopilotButton", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Copilot\BingChat", "IsCopilotAvailable", enable ? 0 : 1, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowCopilotButton", 0);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot", 1);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Copilot\BingChat", "IsCopilotAvailable", 0);
+                    }
+                    else
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "ShowCopilotButton", 1);
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot", "TurnOffWindowsCopilot");
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\Shell\Copilot\BingChat", "IsCopilotAvailable");
+                    }
                     break;
 
                 case "recall":
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "AllowRecall", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableRecall", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled", enable ? 1 : 0, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "AllowRecall", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableRecall", 1);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled", 1);
+                    }
+                    else
+                    {
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableAIDataAnalysis");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "AllowRecall");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableRecall");
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "SnapshotAnalysisDisabled");
+                    }
                     break;
 
                 case "clicktodo":
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ClickToDo", "Enabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableClickToDo", enable ? 1 : 0, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ClickToDo", "Enabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableClickToDo", 1);
+                    }
+                    else
+                    {
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\ClickToDo", "Enabled");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsAI", "DisableClickToDo");
+                    }
                     break;
 
                 case "generativesearch":
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "DeviceHistoryEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\SearchSettings", "IsDynamicSearchBoxEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "DisableWebSearch", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "ConnectedSearchUseWeb", enable ? 0 : 1, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "DeviceHistoryEnabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\SearchSettings", "IsDynamicSearchBoxEnabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "DisableWebSearch", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "ConnectedSearchUseWeb", 0);
+                    }
+                    else
+                    {
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 1);
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "DisableWebSearch");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "ConnectedSearchUseWeb");
+                    }
                     break;
 
                 case "appai":
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Paint", "DisableCocreator", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Paint", "DisableCocreator", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableGenerativeErase", enable ? 1 : 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableAI", enable ? 1 : 0, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Paint", "DisableCocreator", 1);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Microsoft\Paint", "DisableCocreator", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableGenerativeErase", 1);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableAI", 1);
+                    }
+                    else
+                    {
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Paint", "DisableCocreator");
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Microsoft\Paint", "DisableCocreator");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableGenerativeErase");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Photos", "DisableAI");
+                    }
                     break;
 
                 case "edgeai":
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "HubsSidebarEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "CopilotCDPEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge", "HubsSidebarEnabled", enable ? 0 : 1, RegistryValueKind.DWord);
+                    if (enable)
+                    {
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "HubsSidebarEnabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "CopilotCDPEnabled", 0);
+                        RegistryHelper.SetDword(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge", "HubsSidebarEnabled", 0);
+                    }
+                    else
+                    {
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "HubsSidebarEnabled");
+                        RegistryHelper.DeleteValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Edge", "CopilotCDPEnabled");
+                        RegistryHelper.DeleteValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Edge", "HubsSidebarEnabled");
+                    }
                     break;
             }
         }
@@ -2258,7 +2631,9 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private async void Clean_Click(object sender, RoutedEventArgs e)
     {
-        if (System.Windows.MessageBox.Show("Are you sure you want to clean selected system folders?", "Confirm Cleanup", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+        string cTitle = LocalizationManager.Instance.GetString("Notifications.ConfirmCleanupTitle");
+        string cMsg = LocalizationManager.Instance.GetString("Notifications.ConfirmCleanupMessage");
+        if (System.Windows.MessageBox.Show(cMsg, cTitle, MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
         {
             if (Interlocked.Exchange(ref _cleanupOperationInFlight, 1) != 0)
             {
@@ -2285,12 +2660,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                     : "System folders cleaned successfully!";
 
                 CleanupSizeText.Text = "Estimated size: 0 B";
-                System.Windows.MessageBox.Show(completionMessage, "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                string sTitle = LocalizationManager.Instance.GetString("Notifications.CleanupSuccess");
+                System.Windows.MessageBox.Show(completionMessage, sTitle, MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 Logger.Error(ex, "Cleanup execution failed.");
-                System.Windows.MessageBox.Show($"Error during cleanup: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                string eTitle = LocalizationManager.Instance.GetString("Notifications.CleanupError");
+                System.Windows.MessageBox.Show(string.Format(eTitle, ex.Message), "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -2694,15 +3071,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void LanguageSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_isApplyingSettings) return;
         if (LanguageSelector.SelectedItem is ComboBoxItem item && item.Tag is string langCode)
         {
             _settings.Language = langCode;
             LocalizationManager.Instance.SetLanguage(langCode);
             SettingsManager.Save(_settings);
             RefreshTurboParrotBadge();
-            RefreshAntimalwareStatus();
             RefreshBoostPresentation();
             RefreshDriverPresentation();
+            SetupTrayIcon();
         }
     }
 

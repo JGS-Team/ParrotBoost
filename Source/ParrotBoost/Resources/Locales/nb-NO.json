@@ -104,7 +104,7 @@
     "Scan": "Skann etter filer",
     "CleanNow": "Rens nå",
     "TurboParrotTitle": "Turbo Parrot strømplan",
-    "TurboParrotDesc": "Maksimal strømplan: 100% CPU min/maks, 0% kjerne-parkering, ingen PCIe/disk/USB-dvale.",
+    "TurboParrotDesc": "Turbo Parrot strømplan: 100% CPU min/maks, 0% kjerne-parkering, null ventetid, ingen PCIe/disk/USB-dvale.",
     "TurboParrotEnable": "Aktiver Turbo Parrot",
     "TurboParrotRestore": "Gjenopprett standard",
     "TurboParrotActive": "Aktiv (Turbo Parrot)",
@@ -130,6 +130,30 @@
     "OptDeliveryOptimization": "Deaktiver Leveringsoptimaliseringstjeneste",
     "OptDynamicTick": "Deaktiver Dynamic Tick (Høy presisjonstimer)",
     "CleanRam": "Tøm RAM",
-    "CheckUpdatesNow": "Se etter oppdateringer nå"
+    "CheckUpdatesNow": "Se etter oppdateringer nå",
+    "FactoryResetTitle": "Fabrikkinnstillinger",
+    "ResetDefaults": "Gjenopprett fabrikkinnstillinger",
+    "ResetDefaultsDesc": "Gjenoppretter standardkonfigurasjonen etter installasjon (Out of the box)."
+  },
+  "Notifications": {
+    "ConfirmResetTitle": "Gjenopprett fabrikkinnstillinger",
+    "ConfirmResetMessage": "Er du sikker på at du vil tilbakestille alle innstillinger til fabrikkstandard?",
+    "ResetDefaultsSuccess": "Fabrikkinnstillinger ble gjenopprettet!",
+    "UpdateTitle": "Oppdateringer",
+    "UpdateLatest": "Du har den nyeste versjonen av ParrotBoost (v{0}).",
+    "UpdateFailed": "Kunne ikke se etter oppdateringer: {0}",
+    "RamCleaned": "RAM-minnet ble renset!",
+    "ConfirmCleanupTitle": "Bekreft rensing",
+    "ConfirmCleanupMessage": "Er du sikker på at du vil rense valgte systemmapper?",
+    "CleanupSuccess": "Rensingen er fullført.",
+    "CleanupError": "Feil under rensing: {0}",
+    "DriverUpdateAvailableTooltip": "En nyere GPU-driverversjon er tilgjengelig:\n{0}",
+    "BoostStarted": "Turbo Boost aktivert!",
+    "BoostRestored": "Standardinnstillinger gjenopprettet."
+  },
+  "Tray": {
+    "Show": "Vis",
+    "BoostToggle": "Boost PÅ/AV",
+    "Exit": "Avslutt"
   }
 }

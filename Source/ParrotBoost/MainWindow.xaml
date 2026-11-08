@@ -35,40 +35,66 @@
         <SolidColorBrush x:Key="HeaderBackground" Color="#FFFFFF"/>
         <SolidColorBrush x:Key="ColorPrimaryBrush" Color="#2ECC71"/>
         <SolidColorBrush x:Key="BoostButtonBorderBrush" Color="#2D3436"/>
-        <SolidColorBrush x:Key="SliderTrackBackground" Color="#161B22"/>
-        <SolidColorBrush x:Key="SliderTrackBorder" Color="#2A3241"/>
-        <SolidColorBrush x:Key="SliderThumbBackground" Color="#161B22"/>
+        <SolidColorBrush x:Key="SliderTrackBackground" Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="SliderTrackBorder" Color="#CBD5E1"/>
+        <SolidColorBrush x:Key="SliderThumbBackground" Color="White"/>
         
         <DropShadowEffect x:Key="CardShadow" BlurRadius="10" Direction="270" RenderingBias="Quality" ShadowDepth="1" Opacity="0.08"/>
 
-        <!-- Tasteful Minimalist Dark Slider Style -->
+        <!-- Tasteful Modern Slider Style with Active Progress Track -->
+        <Style x:Key="SliderProgressRepeatButton" TargetType="{x:Type RepeatButton}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                        <Border Background="{DynamicResource ColorPrimaryBrush}" Height="6" CornerRadius="3,0,0,3" SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SliderRemainingRepeatButton" TargetType="{x:Type RepeatButton}">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type RepeatButton}">
+                        <Border Background="{DynamicResource SliderTrackBackground}" BorderBrush="{DynamicResource SliderTrackBorder}" BorderThickness="0,1,1,1" Height="6" CornerRadius="0,3,3,0" SnapsToDevicePixels="True"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="TastefulSliderThumbStyle" TargetType="{x:Type Thumb}">
             <Setter Property="OverridesDefaultStyle" Value="True"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Thumb}">
-                        <Grid Width="18" Height="18">
-                            <Ellipse x:Name="GlowRing" Width="18" Height="18" Fill="#10B981" Opacity="0.18" Visibility="Collapsed"/>
-                            <Ellipse x:Name="OuterRing" Width="14" Height="14" Fill="{DynamicResource SliderThumbBackground}" Stroke="#10B981" StrokeThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid Width="22" Height="22">
+                            <Ellipse x:Name="GlowRing" Width="22" Height="22" Fill="#10B981" Opacity="0.22" Visibility="Collapsed"/>
+                            <Ellipse x:Name="OuterRing" Width="18" Height="18" Fill="{DynamicResource SliderThumbBackground}" Stroke="#10B981" StrokeThickness="2.5" HorizontalAlignment="Center" VerticalAlignment="Center">
                                 <Ellipse.Effect>
                                     <DropShadowEffect BlurRadius="6" Direction="0" ShadowDepth="0" Color="#10B981" Opacity="0.5"/>
                                 </Ellipse.Effect>
                             </Ellipse>
-                            <Ellipse x:Name="InnerDot" Width="4" Height="4" Fill="#10B981" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Ellipse x:Name="InnerDot" Width="6" Height="6" Fill="#10B981" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="GlowRing" Property="Visibility" Value="Visible"/>
                                 <Setter TargetName="OuterRing" Property="Stroke" Value="#34D399"/>
-                                <Setter TargetName="OuterRing" Property="StrokeThickness" Value="2.5"/>
+                                <Setter TargetName="OuterRing" Property="StrokeThickness" Value="3"/>
                                 <Setter TargetName="InnerDot" Property="Fill" Value="#34D399"/>
-                                <Setter TargetName="InnerDot" Property="Width" Value="5"/>
-                                <Setter TargetName="InnerDot" Property="Height" Value="5"/>
+                                <Setter TargetName="InnerDot" Property="Width" Value="8"/>
+                                <Setter TargetName="InnerDot" Property="Height" Value="8"/>
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
                                 <Setter TargetName="GlowRing" Property="Visibility" Value="Visible"/>
-                                <Setter TargetName="GlowRing" Property="Opacity" Value="0.35"/>
+                                <Setter TargetName="GlowRing" Property="Opacity" Value="0.4"/>
                                 <Setter TargetName="OuterRing" Property="Stroke" Value="#059669"/>
                                 <Setter TargetName="InnerDot" Property="Fill" Value="#34D399"/>
                             </Trigger>
@@ -78,35 +104,21 @@
             </Setter>
         </Style>
 
-        <Style x:Key="TastefulSliderRepeatButton" TargetType="{x:Type RepeatButton}">
-            <Setter Property="OverridesDefaultStyle" Value="True"/>
-            <Setter Property="IsTabStop" Value="False"/>
-            <Setter Property="Focusable" Value="False"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type RepeatButton}">
-                        <Border Background="Transparent" SnapsToDevicePixels="True"/>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <Style TargetType="{x:Type Slider}">
             <Setter Property="Stylus.IsPressAndHoldEnabled" Value="False"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Height" Value="24"/>
+            <Setter Property="Height" Value="28"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="{x:Type Slider}">
                         <Grid VerticalAlignment="Center">
-                            <Border x:Name="TrackBackground" Height="5" Background="{DynamicResource SliderTrackBackground}" BorderBrush="{DynamicResource SliderTrackBorder}" BorderThickness="1" CornerRadius="2.5" VerticalAlignment="Center" Margin="5,0"/>
                             <Track x:Name="PART_Track">
                                 <Track.DecreaseRepeatButton>
-                                    <RepeatButton Style="{StaticResource TastefulSliderRepeatButton}" Command="{x:Static Slider.DecreaseLarge}"/>
+                                    <RepeatButton Style="{StaticResource SliderProgressRepeatButton}" Command="{x:Static Slider.DecreaseLarge}"/>
                                 </Track.DecreaseRepeatButton>
                                 <Track.IncreaseRepeatButton>
-                                    <RepeatButton Style="{StaticResource TastefulSliderRepeatButton}" Command="{x:Static Slider.IncreaseLarge}"/>
+                                    <RepeatButton Style="{StaticResource SliderRemainingRepeatButton}" Command="{x:Static Slider.IncreaseLarge}"/>
                                 </Track.IncreaseRepeatButton>
                                 <Track.Thumb>
                                     <Thumb Style="{StaticResource TastefulSliderThumbStyle}"/>
@@ -117,6 +129,8 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+
 
         <Style x:Key="CrispCard" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
@@ -251,16 +265,16 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <Border Grid.Row="0" Panel.ZIndex="10" Height="45" Background="{DynamicResource HeaderBackground}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="12,12,0,0" ClipToBounds="True" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Border x:Name="TitleBarBorder" Grid.Row="0" Panel.ZIndex="10" Height="45" Background="{DynamicResource HeaderBackground}" BorderThickness="0,0,0,1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="12,12,0,0" ClipToBounds="True" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0">
                         <Image Source="logonbg.png" Width="24" Height="24" RenderOptions.BitmapScalingMode="Fant"/>
-                        <TextBlock Text="{DynamicResource MainWindow.Title}" Foreground="{DynamicResource TextPrimary}" Margin="12,0" FontWeight="Bold" VerticalAlignment="Center" FontSize="15"/>
+                        <TextBlock Text="{DynamicResource MainWindow.Title}" Foreground="{DynamicResource TextPrimary}" Margin="12,0,6,0" FontWeight="Bold" VerticalAlignment="Center" FontSize="15"/>
                     </StackPanel>
                     
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,0">
                         <Button x:Name="ThemeBtn" Style="{StaticResource IconButton}" Click="Theme_Click" Margin="0,0,5,0" ToolTip="Switch Theme" shell:WindowChrome.IsHitTestVisibleInChrome="True">
-                            <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                            <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
                         </Button>
                         <Button x:Name="SettingsBtn" Style="{StaticResource IconButton}" Click="Settings_Click" Margin="0,0,5,0" ToolTip="Settings" shell:WindowChrome.IsHitTestVisibleInChrome="True">
                             <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
@@ -340,7 +354,8 @@
                         </Grid.RowDefinitions>
 
                         <Border Grid.Row="0" Style="{StaticResource ModernCard}" Margin="8" VerticalAlignment="Stretch">
-                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,10">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,10">
                                 <Grid x:Name="LogoContainer" Width="110" Height="110" Margin="0,0,0,14">
                                     <Image Source="logonbg.png" Width="88" Height="88" RenderOptions.BitmapScalingMode="Fant">
                                         <Image.Effect>
@@ -360,7 +375,8 @@
                                            TextWrapping="Wrap" TextAlignment="Center"
                                            MaxWidth="170"/>
                             </StackPanel>
-                        </Border>
+                        </Grid>
+                    </Border>
 
                         <Border Grid.Row="1" Style="{StaticResource ModernCard}" Margin="8" VerticalAlignment="Stretch" Padding="12,20,12,8">
                             <Grid VerticalAlignment="Center">
@@ -419,9 +435,9 @@
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="10,15">
                                         <TextBlock Text="{DynamicResource SettingsWindow.AppSetting}" Foreground="{DynamicResource TextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
-                                        <CheckBox x:Name="LaunchAtStartupCheck" Content="{DynamicResource SettingsWindow.LaunchAtStartup}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                        <CheckBox x:Name="MinimizeToTrayCheck" Content="{DynamicResource SettingsWindow.MinimizeToTray}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                        <CheckBox x:Name="CheckUpdatesOnStartupCheck" Content="{DynamicResource SettingsWindow.CheckUpdatesOnStartup}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
+                                        <CheckBox x:Name="LaunchAtStartupCheck" Content="{DynamicResource SettingsWindow.LaunchAtStartup}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="GeneralCheckBox_Click"/>
+                                        <CheckBox x:Name="MinimizeToTrayCheck" Content="{DynamicResource SettingsWindow.MinimizeToTray}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="GeneralCheckBox_Click"/>
+                                        <CheckBox x:Name="CheckUpdatesOnStartupCheck" Content="{DynamicResource SettingsWindow.CheckUpdatesOnStartup}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="GeneralCheckBox_Click"/>
                                         
                                         <Button x:Name="CheckUpdatesNowButton" Content="{DynamicResource SettingsWindow.CheckUpdatesNow}" Click="CheckUpdatesNowButton_Click" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextPrimary}" Width="200" HorizontalAlignment="Left" Padding="10,6" Margin="0,8,0,0"/>
 
@@ -432,6 +448,19 @@
                                             <ComboBoxItem Content="Norsk" Tag="nb-NO"/>
                                             <ComboBoxItem Content="Deutsch" Tag="de-DE"/>
                                         </ComboBox>
+
+                                        <!-- Factory Defaults / Out of the Box Reset Section -->
+                                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,20,0,16" Opacity="0.6"/>
+
+                                        <TextBlock Text="{DynamicResource SettingsWindow.FactoryResetTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" Margin="0,0,0,6" FontSize="14"/>
+                                        <TextBlock Text="{DynamicResource SettingsWindow.ResetDefaultsDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="12" Margin="0,0,0,12" TextWrapping="Wrap"/>
+                                        <Button x:Name="ResetDefaultsButton" Content="{DynamicResource SettingsWindow.ResetDefaults}" Click="ResetDefaultsButton_Click" Background="#1AE74C3C" BorderBrush="#80E74C3C" BorderThickness="1" Foreground="#E74C3C" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Left" Padding="14,7" Cursor="Hand">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="8"/>
+                                                </Style>
+                                            </Button.Resources>
+                                        </Button>
                                     </StackPanel>
                                 </ScrollViewer>
                             </TabItem>
@@ -439,62 +468,97 @@
                             <TabItem Header="{DynamicResource SettingsWindow.Performance}" Style="{StaticResource TabItemStyle}" Foreground="{DynamicResource TextPrimary}">
                                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                                     <StackPanel Margin="10,15">
-                                        <!-- Turbo Parrot Power Plan Card -->
-                                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
+                                        <!-- Sleek Modern Turbo Parrot Power Plan Card -->
+                                        <Border x:Name="TurboParrotCardBorder" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
                                             <Grid>
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto"/>
                                                     <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
+
+                                                <!-- Header: Icon, Title & Pill Badge -->
                                                 <Grid Grid.Row="0">
                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{DynamicResource SettingsWindow.TurboParrotTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+                                                        <Border Width="36" Height="36" CornerRadius="10" Background="#182ECC71" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="⚡" FontSize="18" Foreground="{DynamicResource ColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{DynamicResource SettingsWindow.TurboParrotTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="15"/>
+                                                            <TextBlock Text="{DynamicResource SettingsWindow.TurboParrotDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap" MaxWidth="360"/>
+                                                        </StackPanel>
                                                     </StackPanel>
-                                                    <TextBlock x:Name="TurboParrotStatusBadge" Text="{DynamicResource SettingsWindow.TurboParrotDisabled}" Foreground="{DynamicResource TextSecondary}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+
+                                                    <!-- Status Pill Badge -->
+                                                    <Border x:Name="TurboParrotPill" CornerRadius="12" Padding="10,4" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#1494A3B8" BorderBrush="#3094A3B8" BorderThickness="1">
+                                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                            <Ellipse x:Name="TurboParrotDot" Width="6" Height="6" Fill="#94A3B8" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                            <TextBlock x:Name="TurboParrotStatusBadge" Text="{DynamicResource SettingsWindow.TurboParrotDisabled}" Foreground="{DynamicResource TextSecondary}" FontWeight="SemiBold" FontSize="11" VerticalAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </Border>
                                                 </Grid>
-                                                <Grid Grid.Row="1" Margin="0,10,0,0">
-                                                    <TextBlock Text="{DynamicResource SettingsWindow.TurboParrotDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="11" TextWrapping="Wrap" MaxWidth="280" HorizontalAlignment="Left" VerticalAlignment="Center"/>
-                                                    <Button x:Name="ToggleTurboParrotBtn" Content="{DynamicResource SettingsWindow.TurboParrotEnable}" Click="ToggleTurboParrotBtn_Click" Background="{DynamicResource ColorPrimaryBrush}" Foreground="White" FontWeight="Bold" Padding="12,5" HorizontalAlignment="Right" Cursor="Hand" BorderThickness="0"/>
+
+                                                <!-- Divider line -->
+                                                <Border Grid.Row="1" Height="1" Background="{DynamicResource BorderBrush}" Margin="0,12,0,12" Opacity="0.6"/>
+
+                                                <!-- Action Row -->
+                                                <Grid Grid.Row="2">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Border Background="#102ECC71" CornerRadius="6" Padding="6,2" Margin="0,0,6,0">
+                                                            <TextBlock Text="100% CPU" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ColorPrimaryBrush}"/>
+                                                        </Border>
+                                                        <Border Background="#102ECC71" CornerRadius="6" Padding="6,2" Margin="0,0,6,0">
+                                                            <TextBlock Text="0% Core Parking" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ColorPrimaryBrush}"/>
+                                                        </Border>
+                                                        <Border Background="#102ECC71" CornerRadius="6" Padding="6,2">
+                                                            <TextBlock Text="Zero Latency" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource ColorPrimaryBrush}"/>
+                                                        </Border>
+                                                    </StackPanel>
+
+                                                    <Button x:Name="ToggleTurboParrotBtn" Content="{DynamicResource SettingsWindow.TurboParrotEnable}" Click="ToggleTurboParrotBtn_Click" Background="{DynamicResource ColorPrimaryBrush}" Foreground="White" FontWeight="Bold" FontSize="12" Padding="16,7" HorizontalAlignment="Right" Cursor="Hand" BorderThickness="0">
+                                                        <Button.Resources>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="CornerRadius" Value="14"/>
+                                                            </Style>
+                                                        </Button.Resources>
+                                                    </Button>
                                                 </Grid>
                                             </Grid>
                                         </Border>
 
-                                        <!-- Minimalist CPU Usage Limit Slider -->
-                                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
+                                        <!-- Sleek Modern CPU Usage Limit Card -->
+                                        <Border x:Name="CpuLimitCardBorder" Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,16">
                                             <StackPanel>
-                                                <Grid>
-                                                    <TextBlock Text="{DynamicResource SettingsWindow.CpuLimitTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                                    <TextBlock x:Name="CpuLimitValueText" Text="80%" Foreground="{DynamicResource ColorPrimaryBrush}" FontWeight="Bold" FontSize="13" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                                                <!-- Header: Title, Description & Digital Percentage Readout -->
+                                                <Grid Margin="0,0,0,12">
+                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                        <Border Width="36" Height="36" CornerRadius="10" Background="#182ECC71" Margin="0,0,12,0" VerticalAlignment="Center">
+                                                            <TextBlock Text="" FontFamily="Segoe MDL2 Assets" FontSize="17" Foreground="{DynamicResource ColorPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <StackPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{DynamicResource SettingsWindow.CpuLimitTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="15"/>
+                                                            <TextBlock Text="{DynamicResource SettingsWindow.CpuLimitDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,2,0,0"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+
+                                                    <!-- Digital Readout Badge -->
+                                                    <Border CornerRadius="10" Padding="12,5" HorizontalAlignment="Right" VerticalAlignment="Center" Background="#182ECC71" BorderBrush="#352ECC71" BorderThickness="1">
+                                                        <TextBlock x:Name="CpuLimitValueText" Text="80%" Foreground="{DynamicResource ColorPrimaryBrush}" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
                                                 </Grid>
-                                                <TextBlock Text="{DynamicResource SettingsWindow.CpuLimitDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="11" Margin="0,4,0,8"/>
-                                                <Slider x:Name="CpuLimitSlider" Minimum="5" Maximum="100" Value="80" SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,4,0,2" ValueChanged="CpuLimitSlider_ValueChanged"/>
+
+                                                <!-- Modern Slider with Active Progress Track -->
+                                                <Slider x:Name="CpuLimitSlider" Minimum="5" Maximum="100" Value="80" SmallChange="5" LargeChange="10" TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,6,0,4" ValueChanged="CpuLimitSlider_ValueChanged"/>
+
+                                                <!-- Min / Max scale markers -->
+                                                <Grid Margin="4,0,4,6">
+                                                    <TextBlock Text="5% Min" Foreground="{DynamicResource TextSecondary}" FontSize="10" HorizontalAlignment="Left"/>
+                                                    <TextBlock Text="100% Maks" Foreground="{DynamicResource TextSecondary}" FontSize="10" HorizontalAlignment="Right"/>
+                                                </Grid>
                                             </StackPanel>
                                         </Border>
 
-                                        <!-- Fast Antimalware Scanner Section -->
-                                        <Border Background="{DynamicResource CardBackground}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="10" Padding="14" Margin="0,0,0,16">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
-                                                <Grid Grid.Row="0">
-                                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                        <TextBlock Text="🛡️" FontSize="15" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{DynamicResource SettingsWindow.AntimalwareTitle}" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                    <TextBlock x:Name="AntimalwareStatusBadge" Text="{DynamicResource SettingsWindow.AntimalwareReady}" Foreground="{DynamicResource TextSecondary}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Right" VerticalAlignment="Center"/>
-                                                </Grid>
-                                                <Grid Grid.Row="1" Margin="0,8,0,0">
-                                                    <StackPanel MaxWidth="280" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                                        <TextBlock x:Name="AntimalwareStatusText" Text="{DynamicResource SettingsWindow.AntimalwareDesc}" Foreground="{DynamicResource TextSecondary}" FontSize="11" TextWrapping="Wrap"/>
-                                                        <ProgressBar x:Name="AntimalwareProgressBar" Height="3" Minimum="0" Maximum="100" Value="0" Visibility="Collapsed" Margin="0,6,0,0" Background="#14171E" Foreground="{DynamicResource ColorPrimaryBrush}" BorderThickness="0"/>
-                                                    </StackPanel>
-                                                    <Button x:Name="FastAntimalwareScanBtn" Content="{DynamicResource SettingsWindow.AntimalwareQuickScan}" Click="FastAntimalwareScanBtn_Click" Background="{DynamicResource BorderBrush}" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold" Padding="12,5" HorizontalAlignment="Right" Cursor="Hand" BorderThickness="0"/>
-                                                </Grid>
-                                            </Grid>
-                                        </Border>
+
 
                                         <TextBlock Text="{DynamicResource SettingsWindow.OptimizationSteps}" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Bold" Margin="0,4,0,10"/>
                                         <CheckBox x:Name="OptBlockDeliveryUploadCheck" Content="{DynamicResource SettingsWindow.BlockDeliveryOptimization}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="PerformanceCheckBox_Click"/>
@@ -543,15 +607,15 @@
                                     <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
                                         <StackPanel>
                                             <TextBlock Text="{DynamicResource SettingsWindow.SystemCleanup}" Foreground="{DynamicResource TextPrimary}" FontSize="18" FontWeight="Bold" Margin="0,0,0,15"/>
-                                            <CheckBox x:Name="CleanPrefetchCheck" Content="{DynamicResource SettingsWindow.CleanPrefetch}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanTempCheck" Content="{DynamicResource SettingsWindow.CleanTemp}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanWinTempCheck" Content="{DynamicResource SettingsWindow.CleanWinTemp}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanUpdateCacheCheck" Content="{DynamicResource SettingsWindow.CleanUpdateCache}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanRecycleBinCheck" Content="{DynamicResource SettingsWindow.CleanRecycleBin}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanBrowserCacheCheck" Content="{DynamicResource SettingsWindow.CleanBrowserCache}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanThumbnailsCheck" Content="{DynamicResource SettingsWindow.CleanThumbnails}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanErrorReportingCheck" Content="{DynamicResource SettingsWindow.CleanErrorReporting}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
-                                            <CheckBox x:Name="CleanSystemLogsCheck" Content="{DynamicResource SettingsWindow.CleanSystemLogs}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13"/>
+                                            <CheckBox x:Name="CleanPrefetchCheck" Content="{DynamicResource SettingsWindow.CleanPrefetch}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanTempCheck" Content="{DynamicResource SettingsWindow.CleanTemp}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanWinTempCheck" Content="{DynamicResource SettingsWindow.CleanWinTemp}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanUpdateCacheCheck" Content="{DynamicResource SettingsWindow.CleanUpdateCache}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanRecycleBinCheck" Content="{DynamicResource SettingsWindow.CleanRecycleBin}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanBrowserCacheCheck" Content="{DynamicResource SettingsWindow.CleanBrowserCache}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanThumbnailsCheck" Content="{DynamicResource SettingsWindow.CleanThumbnails}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanErrorReportingCheck" Content="{DynamicResource SettingsWindow.CleanErrorReporting}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
+                                            <CheckBox x:Name="CleanSystemLogsCheck" Content="{DynamicResource SettingsWindow.CleanSystemLogs}" Foreground="{DynamicResource TextPrimary}" Margin="0,5" FontSize="13" Click="CleanupCheckBox_Click"/>
                                         </StackPanel>
                                     </ScrollViewer>
 
@@ -572,12 +636,12 @@
                 </Grid>
             </Grid>
 
-            <Border Grid.Row="3" Background="{DynamicResource HeaderBackground}" Padding="20,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="0,0,12,12" ClipToBounds="True">
+            <Border x:Name="BottomBarBorder" Grid.Row="3" Background="{DynamicResource HeaderBackground}" Padding="20,12" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="0,0,12,12" ClipToBounds="True">
                 <Grid>
                     <TextBlock Text="© 2026 JGS" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Image Source="logonbg.png" Width="18" Height="18" Opacity="0.6"/>
-                        <TextBlock Text="v3.0.2 Stable" Margin="10,0,0,0" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Text="v3.0.3 Stable" Margin="10,0,0,0" Foreground="{DynamicResource TextSecondary}" FontSize="12" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -596,12 +660,22 @@
                 </StackPanel>
             </Border>
 
-            <Grid x:Name="SplashOverlay" Grid.RowSpan="4" Background="{DynamicResource WindowBackground}" Visibility="Visible" IsHitTestVisible="True" Panel.ZIndex="20">
+            <Grid x:Name="SplashOverlay" Grid.RowSpan="4" Background="{DynamicResource WindowBackground}" Visibility="Visible" IsHitTestVisible="True" Panel.ZIndex="20" ClipToBounds="True">
+                <!-- Center Branding -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <Image x:Name="SplashLogo" Source="logonbg.png" Width="120" Height="120"/>
-                    <TextBlock Text="ParrotBoost" FontSize="26" FontWeight="Bold" Margin="0,25,0,0" HorizontalAlignment="Center" Foreground="{DynamicResource TextPrimary}"/>
-                    <ProgressBar IsIndeterminate="True" Width="180" Height="4" Margin="0,35,0,0" Background="Transparent" BorderThickness="0" Foreground="{DynamicResource ColorPrimaryBrush}"/>
+                    <Border Width="88" Height="88" CornerRadius="44" Background="#142ECC71" Margin="0,0,0,14" HorizontalAlignment="Center">
+                        <Image x:Name="SplashLogo" Source="pack://application:,,,/logonbg.png" Width="68" Height="68" RenderOptions.BitmapScalingMode="Fant"/>
+                    </Border>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Parrot" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource TextPrimary}"/>
+                        <TextBlock Text="Boost" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ColorPrimaryBrush}"/>
+                    </StackPanel>
+                    <TextBlock Text="v3.0.3 Stable • JGS" FontSize="12" Foreground="{DynamicResource TextSecondary}" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    <ProgressBar IsIndeterminate="True" Width="180" Height="3" Margin="0,24,0,0" Background="#14000000" BorderThickness="0" Foreground="{DynamicResource ColorPrimaryBrush}"/>
                 </StackPanel>
+
+                <!-- Sine-wave flight animation canvas for parrot (pn.ico) and falling leaves (leaf.ico, leaf1.ico) -->
+                <Canvas x:Name="SplashCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="True" IsHitTestVisible="False"/>
             </Grid>
         </Grid>
         <Border BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="12" Background="Transparent" IsHitTestVisible="False" Panel.ZIndex="30"/>
