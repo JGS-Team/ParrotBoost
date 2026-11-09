@@ -4,7 +4,7 @@
 <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=28&pause=1000&color=FF9F1C&center=true&vCenter=true&width=600&lines=🚀+ParrotBoost+v3.0.3;🔥+Turbo+Parrot+Power+Plan;🛠️+Built+by+JGS;🦜+Unleash+Your+PC's+Potential" alt="ParrotBoost Title" /><br>
 
 <img src="https://img.shields.io/badge/Version-3.0.3_Stable-brightgreen?style=for-the-badge" alt="Version" />
-<img src="https://img.shields.io/badge/OS-Windows_10\_%2F_11-blue?style=for-the-badge" alt="Platform" />
+<img src="https://img.shields.io/badge/OS-Windows_10\11-blue?style=for-the-badge" alt="Platform" />
 <img src="https://img.shields.io/badge/.NET-11-blueviolet?style=for-the-badge" alt=".NET 11" />
 <img src="https://img.shields.io/badge/C%23-15-blue?style=for-the-badge" alt="C# 15" />
 </div>
