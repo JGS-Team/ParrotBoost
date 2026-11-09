@@ -47,7 +47,7 @@ See the difference for yourself. Our "Boost" mode aggressively targets system la
 
 ### Recommended Way
 
-1. Download the latest **ParrotBoost Installer** (`ParrotBoost-Setup-x64.exe`).
+1. Download the latest **ParrotBoost Installer** (`ParrotBoost Installer.exe`).
 2. Run the installer as Administrator.
 3. Launch ParrotBoost and enjoy optimal system performance.
 
@@ -61,5 +61,5 @@ ParrotBoost is open-source, transparent, and built to empower users with maximum
 
 ## 💬 Feedback & Publisher
 
-Publisher: **JGS**  
-Maintained by **JGS team**.
+Publisher: **JGS-Team**  
+Maintained by **JGS-Team**.
