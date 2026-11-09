@@ -26,9 +26,9 @@
 
 <div align="center">
 <img src="Image/off.png" alt="ParrotBoost App Screenshot" width="820" />
-<br/>
+<br>
 <img src="Image/on.png" alt="ParrotBoost App Screenshot" width="820" />
-<br/>
+<br>
 <sub><i>ParrotBoost v3.0.3 — Main Dashboard</i></sub>
 </div>
 
