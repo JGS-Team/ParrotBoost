@@ -29,7 +29,7 @@
 <br>
 <img src="Image/on.png" alt="ParrotBoost App Screenshot" width="820" />
 <br>
-<sub><i>ParrotBoost v3.0.3  Main Dashboard</i></sub>
+<sub><i>ParrotBoost v3.0.3 Stable  Main Dashboard</i></sub>
 </div>
 
 ---
@@ -48,7 +48,7 @@ See the difference for yourself. Our "Boost" mode aggressively targets system la
 ### Recommended Way
 
 1. Download the latest **ParrotBoost Installer** (`ParrotBoost Installer.exe`).
-2. Run the installer as Administrator.
+2. Run the installer as Administrator !
 3. Launch ParrotBoost and enjoy optimal system performance.
 
 ### Portable & Source Code
