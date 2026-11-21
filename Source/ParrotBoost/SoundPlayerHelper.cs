@@ -18,7 +18,7 @@ internal static class SoundPlayerHelper
             {
                 string targetDir = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "JGS");
+                    "ParrotBoost");
                 Directory.CreateDirectory(targetDir);
                 _cachedFilePath = Path.Combine(targetDir, "parrot.mp3");
 
@@ -61,5 +61,16 @@ internal static class SoundPlayerHelper
         {
         }
     }
-}
 
+    public static void Cleanup()
+    {
+        try
+        {
+            _player?.Close();
+            _player = null;
+        }
+        catch
+        {
+        }
+    }
+}

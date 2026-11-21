@@ -4,6 +4,7 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using NLog;
 
@@ -15,16 +16,18 @@ public sealed class UpdateCheckResult
     public string LatestVersion { get; init; } = string.Empty;
     public string ReleaseNotes { get; init; } = string.Empty;
     public string? DownloadUrl { get; init; }
-    public string ReleaseUrl { get; init; } = "https://github.com/JGS-Parrotnest/ParrotBoost/releases";
+    public string ReleaseUrl { get; init; } = "https://github.com/JGS-Team/ParrotBoost/releases";
 }
 
 public static class ApplicationUpdateService
 {
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
-    public const string CurrentVersion = "3.0.3";
-    public const string RepositoryOwner = "JGS-Parrotnest";
+    public const string CurrentVersion = "3.0.4";
+    public const string CurrentInstallerAppId = "{EC963CDD-2AA6-417B-B547-5D10858624CF}_is1";
+    public const string LegacyInstallerAppId = "{90540FF6-ACF6-4C3E-9F86-911586175009}_is1";
+    public const string RepositoryOwner = "JGS-Team";
     public const string RepositoryName = "ParrotBoost";
-    public const string ReleasesPageUrl = "https://github.com/JGS-Parrotnest/ParrotBoost/releases";
+    public const string ReleasesPageUrl = "https://github.com/JGS-Team/ParrotBoost/releases";
 
     private static readonly HttpClient HttpClient = new()
     {
@@ -56,7 +59,7 @@ public static class ApplicationUpdateService
             string htmlUrl = root.TryGetProperty("html_url", out var urlProp) ? urlProp.GetString() ?? ReleasesPageUrl : ReleasesPageUrl;
             string body = root.TryGetProperty("body", out var bodyProp) ? bodyProp.GetString() ?? "" : "";
 
-            string versionClean = tagName.TrimStart('v', 'V');
+            string versionClean = tagName.TrimStart('v', 'V').Trim();
             if (string.IsNullOrWhiteSpace(versionClean))
             {
                 return new UpdateCheckResult { IsUpdateAvailable = false };
@@ -103,12 +106,31 @@ public static class ApplicationUpdateService
 
     public static bool IsVersionNewer(string latestVersionStr, string currentVersionStr)
     {
-        if (Version.TryParse(latestVersionStr, out var latest) && Version.TryParse(currentVersionStr, out var current))
+        if (TryExtractNumericVersion(latestVersionStr, out var latest) &&
+            TryExtractNumericVersion(currentVersionStr, out var current))
         {
             return latest > current;
         }
 
-        return string.Compare(latestVersionStr, currentVersionStr, StringComparison.OrdinalIgnoreCase) > 0;
+        return false;
+    }
+
+    private static bool TryExtractNumericVersion(string? raw, out Version version)
+    {
+        version = new Version(0, 0, 0);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        var match = Regex.Match(raw, @"\d+(?:\.\d+)+");
+        if (match.Success && Version.TryParse(match.Value, out var parsed))
+        {
+            version = parsed;
+            return true;
+        }
+
+        return false;
     }
 
     public static async Task<bool> DownloadAndInstallUpdateAsync(string? downloadUrl, IProgress<int>? progress = null)
@@ -124,20 +146,21 @@ public static class ApplicationUpdateService
 
                 long? totalBytes = response.Content.Headers.ContentLength;
                 using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                using var fileStream = new FileStream(tempInstallerPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
-
-                byte[] buffer = new byte[81920];
-                long totalRead = 0;
-                int read;
-
-                while ((read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
+                using (var fileStream = new FileStream(tempInstallerPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true))
                 {
-                    await fileStream.WriteAsync(buffer, 0, read).ConfigureAwait(false);
-                    totalRead += read;
-                    if (totalBytes.HasValue && totalBytes.Value > 0)
+                    byte[] buffer = new byte[81920];
+                    long totalRead = 0;
+                    int read;
+
+                    while ((read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        int percent = (int)((totalRead * 100) / totalBytes.Value);
-                        progress?.Report(percent);
+                        await fileStream.WriteAsync(buffer, 0, read).ConfigureAwait(false);
+                        totalRead += read;
+                        if (totalBytes.HasValue && totalBytes.Value > 0)
+                        {
+                            int percent = (int)((totalRead * 100) / totalBytes.Value);
+                            progress?.Report(percent);
+                        }
                     }
                 }
             }
@@ -155,22 +178,27 @@ public static class ApplicationUpdateService
                 }
             }
 
-            if (!File.Exists(tempInstallerPath))
+            var installerInfo = new FileInfo(tempInstallerPath);
+            if (!installerInfo.Exists || installerInfo.Length < 1024)
             {
                 return false;
             }
 
-            SilentlyRemoveOldVersion();
-
+            // Launch the new Inno Setup installer FIRST (which handles in-place upgrades and removes legacy installs after UAC approval)
             var startInfo = new ProcessStartInfo
             {
                 FileName = tempInstallerPath,
                 UseShellExecute = true,
                 Verb = "runas",
-                Arguments = "/SP- /VERYSILENT /SUPPRESSMSGBOXES /FORCECLOSEAPPLICATIONS /NORESTART"
+                Arguments = "/SP- /VERYSILENT /SUPPRESSMSGBOXES /CLOSEAPPLICATIONS /FORCECLOSEAPPLICATIONS /NORESTART"
             };
 
-            Process.Start(startInfo);
+            using var startedProcess = Process.Start(startInfo);
+            if (startedProcess == null)
+            {
+                return false;
+            }
+
             return true;
         }
         catch (Exception ex)
@@ -184,37 +212,41 @@ public static class ApplicationUpdateService
     {
         try
         {
-            const string appId = "{90540FF6-ACF6-4C3E-9F86-911586175009}_is1";
-            string[] registryRoots = {
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + appId,
-                @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\" + appId
-            };
-
-            foreach (var root in registryRoots)
+            string[] appIds = { CurrentInstallerAppId, LegacyInstallerAppId };
+            foreach (string appId in appIds)
             {
-                using var hklmKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(root);
-                using var hkcuKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(root);
-                var key = hklmKey ?? hkcuKey;
-                if (key != null)
+                string[] registryRoots =
                 {
-                    string? uninst = key.GetValue("QuietUninstallString")?.ToString() 
-                                  ?? key.GetValue("UninstallString")?.ToString();
-                    if (!string.IsNullOrWhiteSpace(uninst))
+                    @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\" + appId,
+                    @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\" + appId
+                };
+
+                foreach (var root in registryRoots)
+                {
+                    using var hklmKey = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(root);
+                    using var hkcuKey = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(root);
+                    var key = hklmKey ?? hkcuKey;
+                    if (key != null)
                     {
-                        uninst = uninst.Trim().Trim('\"');
-                        if (File.Exists(uninst))
+                        string? uninst = key.GetValue("QuietUninstallString")?.ToString()
+                                      ?? key.GetValue("UninstallString")?.ToString();
+                        if (!string.IsNullOrWhiteSpace(uninst))
                         {
-                            var psi = new ProcessStartInfo
+                            string exePath = ExtractExecutablePath(uninst);
+                            if (File.Exists(exePath))
                             {
-                                FileName = uninst,
-                                Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
-                                CreateNoWindow = true,
-                                UseShellExecute = true,
-                                Verb = "runas"
-                            };
-                            using var p = Process.Start(psi);
-                            p?.WaitForExit(8000);
-                            break;
+                                var psi = new ProcessStartInfo
+                                {
+                                    FileName = exePath,
+                                    Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART",
+                                    CreateNoWindow = true,
+                                    UseShellExecute = true,
+                                    Verb = "runas"
+                                };
+                                using var p = Process.Start(psi);
+                                p?.WaitForExit(8000);
+                                break;
+                            }
                         }
                     }
                 }
@@ -222,33 +254,67 @@ public static class ApplicationUpdateService
         }
         catch (Exception ex)
         {
-            Logger.Warn(ex, "Silent removal of old version before update encountered a non-critical error.");
+            Logger.Warn(ex, "Silent removal of old version encountered a non-critical error.");
         }
+    }
+
+    private static string ExtractExecutablePath(string commandLine)
+    {
+        string trimmed = commandLine.Trim();
+        if (trimmed.StartsWith("\"", StringComparison.Ordinal))
+        {
+            int endQuote = trimmed.IndexOf('\"', 1);
+            if (endQuote > 1)
+            {
+                return trimmed.Substring(1, endQuote - 1);
+            }
+        }
+
+        int exeIndex = trimmed.IndexOf(".exe", StringComparison.OrdinalIgnoreCase);
+        if (exeIndex > 0)
+        {
+            return trimmed.Substring(0, exeIndex + 4).Trim('\"');
+        }
+
+        return trimmed.Trim('\"');
     }
 
     public static string ResolveLocalInstallerPath()
     {
         string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        string candidate1 = Path.Combine(baseDir, "Instalator", "ParrotBoost-Setup-x64.exe");
-        if (File.Exists(candidate1)) return candidate1;
+        string[] relativeCandidates =
+        {
+            Path.Combine(baseDir, "Installer", "ParrotBoost-Setup-x64.exe"),
+            Path.Combine(baseDir, "Installer", "ParrotBoost Installer.exe"),
+            Path.Combine(baseDir, "Instalator", "ParrotBoost-Setup-x64.exe"),
+            Path.Combine(baseDir, "ParrotBoost-Setup-x64.exe"),
+            Path.Combine(baseDir, "ParrotBoost Installer.exe")
+        };
 
-        string candidate2 = Path.Combine(baseDir, "ParrotBoost-Setup-x64.exe");
-        if (File.Exists(candidate2)) return candidate2;
+        foreach (string candidate in relativeCandidates)
+        {
+            if (File.Exists(candidate)) return candidate;
+        }
 
         try
         {
             var dir = new DirectoryInfo(baseDir);
-            while (dir != null)
+            for (int depth = 0; depth < 4 && dir != null; depth++, dir = dir.Parent)
             {
-                string path = Path.Combine(dir.FullName, "Source", "Instalator", "ParrotBoost-Setup-x64.exe");
-                if (File.Exists(path)) return path;
-                dir = dir.Parent;
+                string p0 = Path.Combine(dir.FullName, "Installer", "ParrotBoost-Setup-x64.exe");
+                if (File.Exists(p0)) return p0;
+
+                string p1 = Path.Combine(dir.FullName, "Installer", "ParrotBoost Installer.exe");
+                if (File.Exists(p1)) return p1;
+
+                string p2 = Path.Combine(dir.FullName, "Source", "Instalator", "ParrotBoost-Setup-x64.exe");
+                if (File.Exists(p2)) return p2;
             }
         }
         catch
         {
         }
 
-        return candidate1;
+        return relativeCandidates[0];
     }
 }
