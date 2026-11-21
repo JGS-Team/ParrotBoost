@@ -1,6 +1,6 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
+using System.Threading;
 using NLog;
 
 namespace ParrotBoost;
@@ -30,7 +30,7 @@ internal sealed class WindowsSecurityActivityMonitor
             }
 
             TimeSpan currentCpuTime = SampleMsMpEngCpuTime();
-            if (_lastSampleUtc == DateTimeOffset.MinValue)
+            if (_lastSampleUtc == DateTimeOffset.MinValue || currentCpuTime == TimeSpan.Zero)
             {
                 _lastSampleUtc = now;
                 _lastTotalProcessorTime = currentCpuTime;
@@ -57,6 +57,44 @@ internal sealed class WindowsSecurityActivityMonitor
 
     private static TimeSpan SampleMsMpEngCpuTime()
     {
-        return TimeSpan.Zero;
+        Process[]? processes = null;
+        try
+        {
+            processes = Process.GetProcessesByName("MsMpEng");
+            if (processes.Length == 0)
+            {
+                return TimeSpan.Zero;
+            }
+
+            TimeSpan total = TimeSpan.Zero;
+            foreach (var proc in processes)
+            {
+                try
+                {
+                    total += proc.TotalProcessorTime;
+                }
+                catch
+                {
+                    // Protected process (PPL) may deny query without SeDebugPrivilege; ignore safely
+                }
+            }
+
+            return total;
+        }
+        catch (Exception ex)
+        {
+            Logger.Trace(ex, "Unable to query MsMpEng processor time.");
+            return TimeSpan.Zero;
+        }
+        finally
+        {
+            if (processes != null)
+            {
+                foreach (var proc in processes)
+                {
+                    try { proc.Dispose(); } catch { }
+                }
+            }
+        }
     }
 }

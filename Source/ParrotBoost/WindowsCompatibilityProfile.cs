@@ -73,7 +73,8 @@ internal sealed class WindowsCompatibilityProfile
 
     public static WindowsCompatibilityProfile ForWindowsVersion(Version version)
     {
-        bool isWindows10 = version.Major == 10 && version.Build > 0 && version.Build < Windows11Build;
+        bool isWindows11OrGreater = version.Major > 10 || (version.Major == 10 && version.Build >= Windows11Build);
+        bool isWindows10 = !isWindows11OrGreater;
         return new WindowsCompatibilityProfile(isWindows: true, version, isWindows10);
     }
 

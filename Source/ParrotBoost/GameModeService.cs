@@ -7,11 +7,13 @@ namespace ParrotBoost;
 
 internal sealed class GameModeService
 {
+    private const string GameBarRegistryPath = @"HKEY_CURRENT_USER\Software\Microsoft\GameBar";
     private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
     private readonly Dictionary<string, bool> _serviceStates = new(StringComparer.OrdinalIgnoreCase);
+    private int? _previousAutoGameMode;
+    private int? _previousAllowAutoGameMode;
     private readonly string[] _managedServices =
     [
-        "Spooler",
         "WSearch"
     ];
 
@@ -23,6 +25,11 @@ internal sealed class GameModeService
         {
             return;
         }
+
+        _previousAutoGameMode = RegistryHelper.GetDwordOrNull(GameBarRegistryPath, "AutoGameModeEnabled");
+        _previousAllowAutoGameMode = RegistryHelper.GetDwordOrNull(GameBarRegistryPath, "AllowAutoGameMode");
+        RegistryHelper.SetDword(GameBarRegistryPath, "AutoGameModeEnabled", 1);
+        RegistryHelper.SetDword(GameBarRegistryPath, "AllowAutoGameMode", 1);
 
         _serviceStates.Clear();
         foreach (string serviceName in _managedServices)
@@ -38,6 +45,24 @@ internal sealed class GameModeService
         if (!IsActive)
         {
             return;
+        }
+
+        if (_previousAutoGameMode.HasValue)
+        {
+            RegistryHelper.SetDword(GameBarRegistryPath, "AutoGameModeEnabled", _previousAutoGameMode.Value);
+        }
+        else
+        {
+            RegistryHelper.DeleteValue(GameBarRegistryPath, "AutoGameModeEnabled");
+        }
+
+        if (_previousAllowAutoGameMode.HasValue)
+        {
+            RegistryHelper.SetDword(GameBarRegistryPath, "AllowAutoGameMode", _previousAllowAutoGameMode.Value);
+        }
+        else
+        {
+            RegistryHelper.DeleteValue(GameBarRegistryPath, "AllowAutoGameMode");
         }
 
         foreach (var entry in _serviceStates)

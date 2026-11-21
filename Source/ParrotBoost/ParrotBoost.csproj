@@ -2,57 +2,65 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFrameworks>net11.0-windows;net472</TargetFrameworks>
-    <DefineConstants>$(DefineConstants);PARROTBOOST_WIN10_COMPAT</DefineConstants>
-    <LangVersion>latest</LangVersion>
+    <TargetFramework>net11.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
+    <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ApplicationIcon>logo.ico</ApplicationIcon>
-    <Authors>JGS</Authors>
-    <Company>JGS</Company>
-    <Product>ParrotBoost</Product>
-    <Description>System Performance Optimization Tool</Description>
-    <Copyright>Copyright © 2026 JGS</Copyright>
-    <AssemblyTitle>ParrotBoost</AssemblyTitle>
-    <Version>3.0.3</Version>
-    <AssemblyVersion>3.0.3.0</AssemblyVersion>
-    <FileVersion>3.0.3.0</FileVersion>
-    <InformationalVersion>3.0.3 Stable</InformationalVersion>
-    <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
-    <Platforms>x64</Platforms>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
-    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>preview</LangVersion>
     <TieredCompilation>true</TieredCompilation>
     <TieredPGO>true</TieredPGO>
+    <Company>JGS-Team</Company>
+    <Authors>JGS-Team</Authors>
+    <Product>ParrotBoost</Product>
+    <Description>ParrotBoost System &amp; Gaming Performance Optimizer</Description>
+    <Copyright>Copyright © 2026 JGS-Team</Copyright>
+    <Version>3.0.4</Version>
+    <AssemblyVersion>3.0.4.0</AssemblyVersion>
+    <FileVersion>3.0.4.0</FileVersion>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebuggerSupport>false</DebuggerSupport>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <EventSourceSupport>false</EventSourceSupport>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
-    <Resource Include="logo.ico" />
-    <Resource Include="logonbg.png" />
-    <Resource Include="pn.ico" />
-    <Resource Include="leaf.ico" />
-    <Resource Include="leaf1.ico" />
-    <Resource Include="parrot.mp3" />
-    <EmbeddedResource Include="parrot.mp3" />
-    <EmbeddedResource Include="Resources\Locales\*.json" />
-    <EmbeddedResource Include="nlog.config" />
+    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.5-pre509" />
+    <PackageReference Include="NLog" Version="4.7.15" />
+    <PackageReference Include="NLog.Config" Version="4.7.15" />
+    <PackageReference Include="System.Management" Version="9.0.10" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NLog.Config" Version="4.7.15" />
-    <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.3" />
-    <PackageReference Include="System.Management" Version="9.0.10" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="9.0.0" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" Condition="'$(TargetFramework)' == 'net472'" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" Condition="'$(TargetFramework)' == 'net472'" />
+    <None Remove="nlog.config" />
+    <None Remove="parrot.mp3" />
+    <None Remove="Resources\Locales\*.json" />
+    <EmbeddedResource Include="nlog.config" />
+    <EmbeddedResource Include="parrot.mp3" />
+    <EmbeddedResource Include="Resources\Locales\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="leaf.ico" />
+    <Resource Include="leaf1.ico" />
+    <Resource Include="logo.ico" />
+    <Resource Include="logonbg.png" />
+    <Resource Include="pn.ico" />
+    <Resource Include="Resources\Icons\*.png" />
   </ItemGroup>
 
 </Project>
